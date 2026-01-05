@@ -1,0 +1,12 @@
+# env
+.env
+.env.*
+!.env.example
+
+# node
+node_modules/
+**/node_modules/
+
+# build
+dist/
+.next/
