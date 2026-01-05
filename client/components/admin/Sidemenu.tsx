@@ -12,7 +12,7 @@ export default function Sidemenu() {
 
   const mainItems = [
     { label: "Dashboard", icon: Home, href: "/admin/dashboard" },
-    { label: "Users", icon: Users, href: "/admin/users" },
+    // { label: "Users", icon: Users, href: "/admin/users" },
     { label: "Category", icon: Layers, href: "/admin/categories" },
     { label: "Banner", icon: Layers, href: "/admin/banner" },
     
