@@ -34,6 +34,7 @@ export default function AdminLogin() {
     e.preventDefault();
     setError("");
 
+  localStorage.removeItem("admin_token"); // ✅ clear stale token
     if (captchaInput !== captcha) {
       setError("Captcha does not match");
       generateCaptcha();

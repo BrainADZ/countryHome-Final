@@ -1,43 +1,75 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import Sidemenu from "@/components/admin/Sidemenu";
 import Topbar from "@/components/admin/Topbar";
 import { useEffect, useState } from "react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function AdminLayout({ children }: any) {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem("admin_token");
-    const isLoginPage = window.location.pathname === "/admin/login";
+    const path = window.location.pathname;
 
-    if (!token && !isLoginPage) {
-      window.location.href = "/admin/login";
-    } else {
-      setIsLoggedIn(!!token);
-      setLoading(false);
+    // ✅ Login page never needs auth check
+    if (path === "/admin/login") {
+      setChecking(false);
+      return;
     }
+
+    // ❌ No token → force login
+    if (!token) {
+      window.location.replace("/admin/login");
+      return;
+    }
+
+    // ✅ Verify token ONCE with backend
+    const verifyAdmin = async () => {
+      try {
+        const res = await fetch(`${API_URL}/admin/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          // token expired / invalid
+          localStorage.removeItem("admin_token");
+          window.location.replace("/admin/login");
+          return;
+        }
+
+        // ✅ Token valid
+        setAuthorized(true);
+      } catch (err) {
+        localStorage.removeItem("admin_token");
+        window.location.replace("/admin/login");
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    verifyAdmin();
   }, []);
 
-  // while checking token, avoid flashing sidebar
-  if (loading) return null;
+  // ⏳ Avoid flicker
+  if (checking) return null;
 
-  const isLoginPage = typeof window !== "undefined"
-    && window.location.pathname === "/admin/login";
+  const isLoginPage =
+    typeof window !== "undefined" &&
+    window.location.pathname === "/admin/login";
 
   return (
     <div className="flex h-screen bg-gray-50">
-      
-      {/* SHOW SIDEBAR ONLY IF LOGGED IN */}
-      {!isLoginPage && isLoggedIn && <Sidemenu />}
+      {!isLoginPage && authorized && <Sidemenu />}
 
       <div className="flex flex-col flex-1">
-        {/* SHOW TOPBAR ONLY IF LOGGED IN */}
-        {!isLoginPage && isLoggedIn && <Topbar />}
-
+        {!isLoginPage && authorized && <Topbar />}
         <main className="p-6 overflow-y-auto">{children}</main>
       </div>
     </div>
