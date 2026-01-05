@@ -31,7 +31,7 @@ export default function AdminDashboard() {
 
   async function fetchStats() {
     try {
-      const data = await apiGet("http://localhost:5000/api/admin/stats");
+      const data = await apiGet(`${process.env.NEXT_PUBLIC_API_URL}/admin/stats`);
       setStats(data.data);
     } catch (err) {
       console.log("Stats Error:", err);
