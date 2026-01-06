@@ -8,6 +8,7 @@ import {
   clearCart,
   updateCartItemOptions,
 } from "../controllers/common/cart.controller";
+import { authOptional } from "../middleware/authOptional";
 
 const router = Router();
 
@@ -15,12 +16,12 @@ const router = Router();
  * CART ROUTES
  * Base: /api/common/cart
  */
-router.get("/cart", getMyCart);
-router.post("/cart/add", addToCart);
-router.patch("/cart/item/options", updateCartItemOptions);
-router.patch("/cart/qty", updateCartQty);
-router.delete("/cart/item/:itemId", removeCartItem);
-router.delete("/cart/clear", clearCart);
+router.get("/cart",authOptional, getMyCart);
+router.post("/cart/add",authOptional, addToCart);
+router.patch("/cart/item/options",authOptional, updateCartItemOptions);
+router.patch("/cart/qty",authOptional, updateCartQty);
+router.delete("/cart/item/:itemId",authOptional, removeCartItem);
+router.delete("/cart/clear",authOptional, clearCart);
 
 /**
  * BANNERS (KEEP THIS LAST)
