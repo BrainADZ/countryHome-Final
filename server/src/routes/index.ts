@@ -1,7 +1,7 @@
 import { Router } from "express";
 import adminRoutes from "./admin.routes.js";
-import commonRoutes from "./common.routes.js"
-// import userRoutes from "./user.routes.js"
+import commonRoutes from "./common.routes.js";
+import userRoutes from "./user.routes.js";
 
 const router = Router();
 
@@ -11,5 +11,5 @@ router.get("/", (req, res) => {
 });
 router.use("/admin", adminRoutes);
 router.use("/common", commonRoutes);
-// router.use("/users", userRoutes);
+router.use("/users", userRoutes);
 export default router;

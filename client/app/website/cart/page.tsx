@@ -10,6 +10,9 @@ import {
   removeItem,
   resolveImageUrl,
   updateQty,
+  updateItemOptions,
+  resolveCartItemImage,
+  getVariantText,
   type CartData,
 } from "@/lib/cartApi";
 
@@ -145,101 +148,192 @@ export default function CartPage() {
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Items */}
         <div className="lg:col-span-2 space-y-4">
-          {items.map((it) => {
-            const img = resolveImageUrl(it.image);
-            const lineTotal = Number(it.salePrice || 0) * Number(it.qty || 0);
-            const lineMrp = Number(it.mrp || 0) * Number(it.qty || 0);
+{items.map((it) => {
+  const product = it.product || null;
 
-            return (
-              <div
-                key={it._id}
-                className="rounded-3xl border bg-white p-4 sm:p-5"
-              >
-                <div className="flex gap-4">
-                  <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gray-50">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={img}
-                      alt={it.title}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
+  const imgPath = resolveCartItemImage(product, it.variantId, it.colorKey);
+  const img = resolveImageUrl(imgPath);
 
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="text-sm font-semibold text-gray-900">
-                          {it.title}
-                        </div>
+  const variantText = getVariantText(product, it.variantId);
 
-                        <div className="mt-1 text-xs text-gray-500">
-                          {it.variantId ? `Variant: ${String(it.variantId).slice(-6)}` : "Standard"}
-                          {it.colorKey ? ` • Color: ${it.colorKey}` : ""}
-                        </div>
-                      </div>
+  const colors = (product?.colors || [])
+    .filter((c) => (c?.name || "").trim())
+    .slice()
+    .sort((a, b) => Number(a.orderIndex ?? 0) - Number(b.orderIndex ?? 0));
 
-                      <button
-                        onClick={() => onRemove(it._id)}
-                        disabled={busyId === it._id}
-                        className="rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                      >
-                        {busyId === it._id ? "Removing..." : "Remove"}
-                      </button>
-                    </div>
+  const variants = product?.variants || [];
 
-                    {/* Price */}
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-end gap-2">
-                        <div className="text-base font-bold text-gray-900">
-                          {money(it.salePrice)}
-                        </div>
-                        {Number(it.mrp) > Number(it.salePrice) && (
-                          <div className="text-sm text-gray-500 line-through">
-                            {money(it.mrp)}
-                          </div>
-                        )}
-                      </div>
+  const lineTotal = Number(it.salePrice || 0) * Number(it.qty || 0);
+  const lineMrp = Number(it.mrp || 0) * Number(it.qty || 0);
 
-                      {/* Qty */}
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => onChangeQty(it._id, it.qty - 1)}
-                          disabled={busyId === it._id || it.qty <= 1}
-                          className="h-10 w-10 rounded-xl border text-lg font-semibold hover:bg-gray-50 disabled:opacity-40"
-                        >
-                          –
-                        </button>
-                        <div className="min-w-10 text-center text-sm font-semibold">
-                          {it.qty}
-                        </div>
-                        <button
-                          onClick={() => onChangeQty(it._id, it.qty + 1)}
-                          disabled={busyId === it._id}
-                          className="h-10 w-10 rounded-xl border text-lg font-semibold hover:bg-gray-50 disabled:opacity-40"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
+  return (
+    <div key={it._id} className="rounded-3xl border bg-white p-4 sm:p-5">
+      <div className="flex gap-4">
+        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gray-50">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={img}
+            alt={product?.title || "Product"}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        </div>
 
-                    {/* Line total */}
-                    <div className="mt-3 flex items-center justify-between text-sm">
-                      <div className="text-gray-500">Line total</div>
-                      <div className="font-semibold text-gray-900">
-                        {money(lineTotal)}{" "}
-                        {lineMrp > lineTotal ? (
-                          <span className="ml-2 text-xs font-semibold text-emerald-700">
-                            Save {money(lineMrp - lineTotal)}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+        <div className="flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-gray-900">
+                {product?.title || it.title}
               </div>
-            );
-          })}
+
+              <div className="mt-1 text-xs text-gray-500">
+                Variant: {variantText}
+                {it.colorKey ? ` • Color: ${it.colorKey}` : ""}
+              </div>
+            </div>
+
+            <button
+              onClick={() => onRemove(it._id)}
+              disabled={busyId === it._id}
+              className="rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              {busyId === it._id ? "Removing..." : "Remove"}
+            </button>
+          </div>
+
+          {/* ✅ Variant change option */}
+          {variants.length > 0 && (
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div className="text-[11px] font-semibold text-gray-600 mb-1">Change Variant</div>
+                <select
+                  value={String(it.variantId)}
+                  disabled={busyId === it._id}
+                  onChange={async (e) => {
+                    try {
+                      setBusyId(it._id);
+                      setError(null);
+                      const updated = await updateItemOptions(it._id, e.target.value, it.colorKey || null);
+                      setCart(updated);
+                    } catch (err: any) {
+                      setError(err?.message || "Variant update failed");
+                    } finally {
+                      setBusyId(null);
+                    }
+                  }}
+                  className="h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-gray-400 bg-white disabled:opacity-60"
+                >
+                  {variants.map((v) => {
+                    const name = v.label || v.comboText || v.size || v.weight || "Variant";
+                    const out = Number(v.quantity ?? 0) <= 0;
+                    return (
+                      <option key={String(v._id)} value={String(v._id)} disabled={out}>
+                        {name}{out ? " (Out)" : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* ✅ Color change option */}
+              <div>
+                <div className="text-[11px] font-semibold text-gray-600 mb-1">Change Color</div>
+                {colors.length ? (
+                  <div className="flex flex-wrap gap-2">
+                    {colors.map((c) => {
+                      const active = String(it.colorKey || "").toLowerCase() === String(c.name || "").toLowerCase();
+                      const hasHex = !!(c.hex || "").trim();
+
+                      return (
+                        <button
+                          key={c._id || c.name}
+                          type="button"
+                          disabled={busyId === it._id}
+                          onClick={async () => {
+                            try {
+                              setBusyId(it._id);
+                              setError(null);
+                              const updated = await updateItemOptions(it._id, String(it.variantId), c.name);
+                              setCart(updated);
+                            } catch (err: any) {
+                              setError(err?.message || "Color update failed");
+                            } finally {
+                              setBusyId(null);
+                            }
+                          }}
+                          className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition disabled:opacity-60
+                            ${active ? "border-blue-600" : "border-gray-200 hover:border-gray-300"}`}
+                          title={c.name}
+                        >
+                          <span
+                            className="h-4 w-4 border border-gray-300"
+                            style={hasHex ? { backgroundColor: c.hex } : undefined}
+                          />
+                          <span className="max-w-[90px] truncate">{c.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-500">No colors</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Price */}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-end gap-2">
+              <div className="text-base font-bold text-gray-900">
+                {money(it.salePrice)}
+              </div>
+              {Number(it.mrp) > Number(it.salePrice) && (
+                <div className="text-sm text-gray-500 line-through">
+                  {money(it.mrp)}
+                </div>
+              )}
+            </div>
+
+            {/* Qty */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onChangeQty(it._id, it.qty - 1)}
+                disabled={busyId === it._id || it.qty <= 1}
+                className="h-10 w-10 rounded-xl border text-lg font-semibold hover:bg-gray-50 disabled:opacity-40"
+              >
+                –
+              </button>
+              <div className="min-w-10 text-center text-sm font-semibold">
+                {it.qty}
+              </div>
+              <button
+                onClick={() => onChangeQty(it._id, it.qty + 1)}
+                disabled={busyId === it._id}
+                className="h-10 w-10 rounded-xl border text-lg font-semibold hover:bg-gray-50 disabled:opacity-40"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          {/* Line total */}
+          <div className="mt-3 flex items-center justify-between text-sm">
+            <div className="text-gray-500">Line total</div>
+            <div className="font-semibold text-gray-900">
+              {money(lineTotal)}{" "}
+              {lineMrp > lineTotal ? (
+                <span className="ml-2 text-xs font-semibold text-emerald-700">
+                  Save {money(lineMrp - lineTotal)}
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+})}
+
         </div>
 
         {/* Summary */}

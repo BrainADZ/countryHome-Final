@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/exhaustive-deps */
+ 
 "use client";
 
 import Sidemenu from "@/components/admin/Sidemenu";
@@ -46,6 +46,7 @@ export default function AdminLayout({ children }: any) {
 
         // ✅ Token valid
         setAuthorized(true);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         localStorage.removeItem("admin_token");
         window.location.replace("/admin/login");

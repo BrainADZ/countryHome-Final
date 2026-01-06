@@ -84,9 +84,42 @@ function formatINR(n: number) {
 }
 
 // TODO: replace with your real cart system
-async function addToCartApi(productId: string, qty: number, variantId?: string) {
-  console.log("ADD TO CART", { productId, qty, variantId });
+async function addToCartApi(args: {
+  productId: string;
+  qty: number;
+  variantId?: string;
+  colorKey?: string | null;
+}) {
+  const { productId, qty, variantId, colorKey } = args;
+
+  if (!productId) throw new Error("Missing productId");
+
+  // if product has variants, variantId must be there
+  // (we’ll validate again before calling)
+  const res = await fetch(`${API_BASE}/common/cart/add`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include", // ✅ important for guest cart cookie
+    body: JSON.stringify({
+      productId,
+      variantId,
+      colorKey: colorKey || null,
+      qty,
+    }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data?.message || "Add to cart failed");
+  }
+
+  // optional: for header cart badge refresh
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("cart:updated"));
+
+  return data?.data ?? data;
 }
+
 
 function AccordionItem({
   title,
@@ -116,16 +149,14 @@ function AccordionItem({
 
         <ChevronDown
           size={18}
-          className={`shrink-0 text-gray-600 transition-transform duration-200 ${
-            open ? "rotate-180" : "rotate-0"
-          }`}
+          className={`shrink-0 text-gray-600 transition-transform duration-200 ${open ? "rotate-180" : "rotate-0"
+            }`}
         />
       </button>
 
       <div
-        className={`grid transition-all duration-200 ease-in-out ${
-          open ? "grid-rows-[1fr] pb-5" : "grid-rows-[0fr] pb-0"
-        }`}
+        className={`grid transition-all duration-200 ease-in-out ${open ? "grid-rows-[1fr] pb-5" : "grid-rows-[0fr] pb-0"
+          }`}
       >
         <div className="overflow-hidden">
           <div className="text-[13px] text-gray-700 leading-relaxed wrap-break-word">
@@ -359,6 +390,10 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
   }, [hasVariants, optionKeys, variants, hasColors, colors]);
 
   const [selections, setSelections] = useState<Record<string, string>>(initialSelections);
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addedOnce, setAddedOnce] = useState(false);
+
 
   useEffect(() => {
     setSelections(initialSelections);
@@ -408,38 +443,38 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
    * 3) product gallery images
    * 4) feature image
    */
-const images = useMemo(() => {
-  const colorImgs = (selectedColor?.images || []).filter(Boolean);
-  const varImgs = (selectedVariant?.images || []).filter(Boolean);
-  const gallery = (product.galleryImages || []).filter(Boolean);
-  const feature = product.featureImage ? [product.featureImage] : [];
+  const images = useMemo(() => {
+    const colorImgs = (selectedColor?.images || []).filter(Boolean);
+    const varImgs = (selectedVariant?.images || []).filter(Boolean);
+    const gallery = (product.galleryImages || []).filter(Boolean);
+    const feature = product.featureImage ? [product.featureImage] : [];
 
-  // ✅ RULE:
-  // 1) color images exist -> only color images
-  // 2) else variant images exist -> only variant images
-  // 3) else fallback -> base gallery + feature
-  let chosen: string[] = [];
+    // ✅ RULE:
+    // 1) color images exist -> only color images
+    // 2) else variant images exist -> only variant images
+    // 3) else fallback -> base gallery + feature
+    let chosen: string[] = [];
 
-  if (colorImgs.length > 0) chosen = colorImgs;
-  else if (varImgs.length > 0) chosen = varImgs;
-  else chosen = [...gallery, ...feature];
+    if (colorImgs.length > 0) chosen = colorImgs;
+    else if (varImgs.length > 0) chosen = varImgs;
+    else chosen = [...gallery, ...feature];
 
-  // unique while preserving order
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const x of chosen) {
-    if (!x) continue;
-    if (seen.has(x)) continue;
-    seen.add(x);
-    out.push(x);
-  }
-  return out;
-}, [
-  selectedColor?.images,
-  selectedVariant?.images,
-  product.galleryImages,
-  product.featureImage,
-]);
+    // unique while preserving order
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const x of chosen) {
+      if (!x) continue;
+      if (seen.has(x)) continue;
+      seen.add(x);
+      out.push(x);
+    }
+    return out;
+  }, [
+    selectedColor?.images,
+    selectedVariant?.images,
+    product.galleryImages,
+    product.featureImage,
+  ]);
 
   const [activeImg, setActiveImg] = useState<string>("");
 
@@ -457,14 +492,62 @@ const images = useMemo(() => {
 
   const handleAddToCart = async () => {
     if (isOut) return;
-    await addToCartApi(product._id, qty, hasVariants ? selectedVariant?._id : undefined);
+
+    // ✅ variantId required if variants exist
+    if (hasVariants && !selectedVariant?._id) {
+      setAddError("Please select a variant");
+      return;
+    }
+
+    setAdding(true);
+    setAddError(null);
+
+    try {
+      await addToCartApi({
+        productId: product._id,
+        qty,
+        variantId: hasVariants ? String(selectedVariant?._id) : undefined,
+        colorKey: selectedColorName ? selectedColorName.trim().toLowerCase() : null,
+      });
+      setAddedOnce(true);
+      setTimeout(() => setAddedOnce(false), 1500);
+
+    } catch (e: any) {
+      setAddError(e?.message || "Add to cart failed");
+    } finally {
+      setAdding(false);
+    }
   };
 
   const handleBuyNow = async () => {
     if (isOut) return;
-    await addToCartApi(product._id, qty, hasVariants ? selectedVariant?._id : undefined);
-    console.log("BUY NOW -> redirect to checkout");
+
+    if (hasVariants && !selectedVariant?._id) {
+      setAddError("Please select a variant");
+      return;
+    }
+
+    setAdding(true);
+    setAddError(null);
+
+    try {
+      await addToCartApi({
+        productId: product._id,
+        qty,
+        variantId: hasVariants ? String(selectedVariant?._id) : undefined,
+        colorKey: selectedColorName ? selectedColorName.trim().toLowerCase() : null,
+      });
+
+      // ✅ redirect to cart/checkout as per your flow
+      window.location.href = "/website/cart";
+    } catch (e: any) {
+      setAddError(e?.message || "Buy now failed");
+    } finally {
+      setAdding(false);
+    }
   };
+
+
 
   // Sort variants: in-stock first, then name
   const sortedVariants = useMemo(() => {
@@ -551,23 +634,30 @@ const images = useMemo(() => {
                       <button
                         type="button"
                         onClick={handleAddToCart}
-                        disabled={isOut}
-                        className={`h-12 font-semibold text-sm border transition w-full ${
-                          isOut
-                            ? "bg-gray-200 text-gray-500 cursor-not-allowed border-gray-200"
-                            : "bg-white text-gray-900 border-gray-300 hover:bg-gray-50"
-                        }`}
+                        disabled={isOut || adding}
+                        className={`h-12 font-semibold text-sm border transition w-full
+    ${isOut
+                            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                            : adding
+                              ? "bg-gray-100 text-gray-700 cursor-wait"
+                              : "bg-white text-gray-900 border-gray-300 hover:bg-gray-50"
+                          }`}
                       >
-                        ADD TO CART
+                        {adding
+                          ? "ADDING…"
+                          : addedOnce
+                            ? "ADDED ✓"
+                            : "ADD TO CART"}
+
                       </button>
+
 
                       <button
                         type="button"
                         onClick={handleBuyNow}
                         disabled={isOut}
-                        className={`h-12 font-semibold text-sm transition w-full ${
-                          isOut ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-orange-600 text-white hover:bg-orange-700"
-                        }`}
+                        className={`h-12 font-semibold text-sm transition w-full cursor-pointer ${isOut ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-orange-600 text-white hover:bg-orange-700"
+                          }`}
                       >
                         BUY NOW
                       </button>
@@ -594,9 +684,8 @@ const images = useMemo(() => {
                             key={img}
                             type="button"
                             onClick={() => setActiveImg(img)}
-                            className={`h-16 w-16 shrink-0 border bg-white overflow-hidden transition snap-start relative ${
-                              active ? "border-blue-600" : "border-gray-200 hover:border-gray-300"
-                            }`}
+                            className={`h-16 w-16 shrink-0 border bg-white overflow-hidden transition snap-start relative ${active ? "border-blue-600" : "border-gray-200 hover:border-gray-300"
+                              }`}
                             aria-label="Select image"
                           >
                             <img
@@ -687,9 +776,8 @@ const images = useMemo(() => {
                               });
                               setQty(1);
                             }}
-                            className={`inline-flex items-center gap-2 px-3 py-2 border text-xs font-semibold transition ${
-                              active ? "border-blue-600" : "border-gray-200 hover:border-gray-300"
-                            }`}
+                            className={`inline-flex items-center gap-2 px-3 py-2 border text-xs font-semibold transition ${active ? "border-blue-600" : "border-gray-200 hover:border-gray-300"
+                              }`}
                           >
                             <span
                               className="h-4 w-4 border border-gray-300"

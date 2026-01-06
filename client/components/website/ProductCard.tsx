@@ -86,34 +86,8 @@ function getVariantFirstImage(v?: ProductCardVariant | null) {
   );
 }
 
-
-async function addToCartApi(productId: string, variantId?: string, variantImage?: string) {
-  if (!productId) return;
-
-  const res = await fetch(`${API_BASE}/common/cart/add`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({
-      productId,
-      variantId,
-      variantImage,
-      qty: 1,
-    }),
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    console.error("Add to cart failed:", data?.message);
-    return;
-  }
-
-  // ✅ refresh header counter (if you added listener)
-  window.dispatchEvent(new Event("cart:updated"));
-
-  console.log("Added to cart:", data);
-}
+// ❌ ProductCard se add-to-cart remove kar diya (as per your instruction)
+// async function addToCartApi(...) { ... }
 
 export default function ProductCard({ product }: { product: ProductCardProduct }) {
   const variants = product.variants || [];
@@ -148,44 +122,21 @@ export default function ProductCard({ product }: { product: ProductCardProduct }
 
   const off = calcDiscountPercent(displayMrp, displaySale);
 
-  /**
-   * ✅ IMAGE LOGIC (as you asked):
-   * - If NO variants => product.featureImage
-   * - If variants exist => selectedVariant first image (images[0] / featureImage / image)
-   * - If selectedVariant has no image => fallback to product.featureImage
-   */
-const rawVariantImg = hasVariants ? getVariantFirstImage(selectedVariant) : "";
-const rawProductImg = cleanImgPath(product.featureImage);
+  // image (variant image -> product feature image)
+  const rawVariantImg = hasVariants ? getVariantFirstImage(selectedVariant) : "";
+  const rawProductImg = cleanImgPath(product.featureImage);
+  const img = resolveImageUrl(rawVariantImg || rawProductImg);
 
-const img = resolveImageUrl(rawVariantImg || rawProductImg);
-
-
+  // ✅ chips me color remove (sirf label/combText/size/weight)
   const variantChips = useMemo(() => {
     return variants
       .map((v) => ({
         id: v._id,
-        text: firstTruthy(v.label, v.comboText, v.size, v.weight, v.color),
+        text: firstTruthy(v.label, v.comboText, v.size, v.weight), // ✅ color removed
         qty: Number(v.quantity ?? 0),
       }))
       .filter((x) => !!x.text);
   }, [variants]);
-
-  const handleAddToCart = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isOut) return;
-
-    // send selected variant image if present (optional)
-    const variantImage = rawVariantImg ? resolveImageUrl(rawVariantImg) : undefined;
-
-    if (hasVariants && !selectedVariantId) return;
-
-    await addToCartApi(
-      product._id,
-      hasVariants ? selectedVariantId : undefined,
-      variantImage
-    );
-  };
 
   const TITLE_LIMIT = 35;
   const titleShort = truncateText(product.title, TITLE_LIMIT);
@@ -194,11 +145,12 @@ const img = resolveImageUrl(rawVariantImg || rawProductImg);
     <div className="group">
       <Link href={`/website/product/${product.slug}`} className="block">
         <div className="relative overflow-hidden transition hover:shadow-xl p-4 border border-gray-200">
+          {/* Image */}
           <div className="relative aspect-square bg-gray-50">
             {img ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                key={img} // ✅ re-render when variant changes image
+                key={img}
                 src={img}
                 alt={product.title}
                 className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
@@ -210,6 +162,7 @@ const img = resolveImageUrl(rawVariantImg || rawProductImg);
               </div>
             )}
 
+            {/* Badges */}
             <div className="absolute left-3 top-3 flex flex-col gap-2">
               {off > 0 && (
                 <span className="inline-flex w-fit items-center rounded-full bg-black/80 px-2.5 py-1 text-[11px] font-semibold text-white">
@@ -224,24 +177,10 @@ const img = resolveImageUrl(rawVariantImg || rawProductImg);
               )}
             </div>
 
-            <div className="absolute inset-x-0 bottom-0 p-3">
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                disabled={isOut}
-                className={`w-full rounded-xl px-3 py-2 text-sm font-semibold transition
-                  ${
-                    isOut
-                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                      : "bg-gray-900 text-white hover:bg-black"
-                  }
-                  opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0`}
-              >
-                Add to cart
-              </button>
-            </div>
+            {/* ✅ Add to cart button removed */}
           </div>
 
+          {/* Content */}
           <div className="mt-4">
             <h3
               className="text-[14px] font-semibold leading-snug text-gray-900"
@@ -250,6 +189,7 @@ const img = resolveImageUrl(rawVariantImg || rawProductImg);
               {titleShort}
             </h3>
 
+            {/* Price row */}
             <div className="mt-3 flex items-end justify-between gap-3">
               <div className="flex items-end gap-2">
                 <div className="text-[16px] font-bold text-gray-900">
@@ -270,6 +210,7 @@ const img = resolveImageUrl(rawVariantImg || rawProductImg);
               )}
             </div>
 
+            {/* Variant chips */}
             <div className="min-h-[42px]">
               {hasVariants && variantChips.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -312,6 +253,7 @@ const img = resolveImageUrl(rawVariantImg || rawProductImg);
               )}
             </div>
 
+            {/* Stock microtext */}
             {hasVariants && selectedVariant && (
               <div className="mt-2 text-[12px] text-gray-500">
                 {Number(selectedVariant.quantity ?? 0) > 0 ? "In stock" : "Currently unavailable"}

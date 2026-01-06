@@ -6,6 +6,7 @@ import {
   updateCartQty,
   removeCartItem,
   clearCart,
+  updateCartItemOptions,
 } from "../controllers/common/cart.controller";
 
 const router = Router();
@@ -16,6 +17,7 @@ const router = Router();
  */
 router.get("/cart", getMyCart);
 router.post("/cart/add", addToCart);
+router.patch("/cart/item/options", updateCartItemOptions);
 router.patch("/cart/qty", updateCartQty);
 router.delete("/cart/item/:itemId", removeCartItem);
 router.delete("/cart/clear", clearCart);

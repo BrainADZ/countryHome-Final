@@ -357,6 +357,126 @@ export const updateCartQty = async (
  * DELETE /cart/item/:itemId
  * remove single line item
  */
+/**
+ * PATCH /cart/item/options
+ * body: { itemId, variantId, colorKey? }
+ * - change commercial variant (price snapshot must update)
+ * - change colorKey (visual only)
+ * - stock check: current qty <= new variant.quantity
+ * - merge if same (productId+variantId+colorKey) already exists
+ */
+export const updateCartItemOptions = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const { itemId, variantId, colorKey } = req.body as any;
+
+    if (!Types.ObjectId.isValid(itemId)) {
+      return res.status(400).json({ message: "Invalid itemId" });
+    }
+    if (!Types.ObjectId.isValid(variantId)) {
+      return res.status(400).json({ message: "variantId is required and must be valid" });
+    }
+
+    const normalizedColor = normalizeColorKey(colorKey);
+
+    const cart = await Cart.findOne({ userId });
+    if (!cart) {
+      return res.status(200).json({ message: "Cart empty", data: { userId, items: [] } });
+    }
+
+    const current: any = cart.items.find((it: any) => String(it._id) === String(itemId));
+    if (!current) return res.status(404).json({ message: "Cart item not found" });
+
+    const product = await Product.findById(current.productId)
+      .select("isActive variants colors")
+      .lean();
+
+    if (!product || product.isActive === false) {
+      return res.status(409).json({ message: "Product unavailable now" });
+    }
+
+    const newVariant = (product.variants || []).find((v: any) => String(v._id) === String(variantId));
+    if (!newVariant) {
+      return res.status(400).json({ message: "Variant not found for this product" });
+    }
+
+    // optional: validate color belongs to product.colors
+    if (normalizedColor) {
+      const ok = (product.colors || []).some((c: any) => {
+        const nm = String(c?.name || "").trim().toLowerCase();
+        return nm && nm === normalizedColor;
+      });
+      if (!ok) return res.status(400).json({ message: "Invalid color for this product" });
+    }
+
+    const available = Number(newVariant.quantity || 0);
+    if (available <= 0) return res.status(409).json({ message: "Selected variant is out of stock" });
+    if (Number(current.qty || 1) > available) {
+      return res.status(409).json({
+        message: "Current quantity exceeds available stock for selected variant",
+        available,
+      });
+    }
+
+    const nextVariantId = String(variantId);
+    const nextColorKey = normalizedColor;
+
+    // ✅ merge if same line already exists
+    const targetIdx = cart.items.findIndex((it: any) =>
+      lineMatches(it, String(current.productId), nextVariantId, nextColorKey)
+    );
+
+    // update snapshot because commercial variant changed
+    const mrpSnap = Number(newVariant.mrp || 0);
+    const saleSnap = Number(newVariant.salePrice || 0);
+
+    if (targetIdx > -1) {
+      const target: any = cart.items[targetIdx];
+
+      // if target is different item, merge qty then remove current
+      if (String(target._id) !== String(current._id)) {
+        const mergedQty = Number(target.qty || 0) + Number(current.qty || 0);
+        if (mergedQty > available) {
+          return res.status(409).json({
+            message: "Merged quantity exceeds available stock for selected variant",
+            available,
+          });
+        }
+
+        target.qty = mergedQty;
+        target.variantId = new Types.ObjectId(variantId);
+        target.colorKey = nextColorKey;
+        target.mrp = mrpSnap;
+        target.salePrice = saleSnap;
+        target.updatedAt = new Date();
+
+        cart.items = cart.items.filter((it: any) => String(it._id) !== String(current._id)) as any;
+      } else {
+        // same item, just update options
+        current.variantId = new Types.ObjectId(variantId);
+        current.colorKey = nextColorKey;
+        current.mrp = mrpSnap;
+        current.salePrice = saleSnap;
+        current.updatedAt = new Date();
+      }
+    } else {
+      // no merge, update current item
+      current.variantId = new Types.ObjectId(variantId);
+      current.colorKey = nextColorKey;
+      current.mrp = mrpSnap;
+      current.salePrice = saleSnap;
+      current.updatedAt = new Date();
+    }
+
+    await cart.save();
+    return res.status(200).json({ message: "Item options updated", data: cart });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const removeCartItem = async (
   req: Request,
   res: Response,

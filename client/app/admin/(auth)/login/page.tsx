@@ -83,7 +83,7 @@ export default function AdminLogin() {
         </div>
       )}
 
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-sky-100 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 to-sky-100 p-4">
         <Card className="w-full max-w-sm shadow-xl border border-slate-200 bg-white">
           <CardHeader>
             <div className="flex items-center gap-2">

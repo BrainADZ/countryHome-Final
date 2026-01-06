@@ -1,6 +1,6 @@
 export default function MaintenancePage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-sky-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 to-sky-100 px-4">
       <div className="w-full max-w-lg rounded-2xl bg-white border border-slate-200 shadow-xl p-8 text-center">
         
         {/* Logo / Brand */}

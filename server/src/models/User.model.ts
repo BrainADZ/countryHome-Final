@@ -3,22 +3,43 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 export interface IUser extends Document {
   name: string;
   email: string;
+  phone: string;
   password: string;
-  role: string;
+
+  emailVerified: boolean;
+
+  role: "user";
+
   createdAt: Date;
+  updatedAt: Date;
 }
 
-const userSchema = new Schema<IUser>(
+const UserSchema = new Schema<IUser>(
   {
-    name: String,
-    email: String,
-    password: String,
-    role: { type: String, default: "user" },
+    name: { type: String, required: true, trim: true },
+
+    email: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+
+    phone: { type: String, required: true, trim: true, index: true },
+
+    password: { type: String, required: true },
+
+    emailVerified: { type: Boolean, default: false },
+
+    role: { type: String, enum: ["user"], default: "user" },
   },
   { timestamps: true }
 );
 
-const User: Model<IUser> =
-  mongoose.models.User || mongoose.model<IUser>("User", userSchema);
+// ✅ Avoid duplicates
+UserSchema.index({ email: 1 }, { unique: true });
+UserSchema.index({ phone: 1 }, { unique: true });
 
-export default User;
+export const User: Model<IUser> =
+  mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
