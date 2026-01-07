@@ -7,6 +7,9 @@ import { Schema, model, Types, Document } from "mongoose";
 export interface ICartItem {
   productId: Types.ObjectId;
 
+  // ✅ Snapshot public code (CH000001 / MECH999999 etc.)
+  productCode?: string; // from Product.productId
+
   // OPTIONAL (null for non-variant products)
   variantId?: Types.ObjectId | null;
 
@@ -14,6 +17,8 @@ export interface ICartItem {
   colorKey?: string | null;
 
   qty: number;
+  isSelected: boolean;
+
 
   // snapshots (UI safe)
   title: string;
@@ -52,6 +57,13 @@ const CartItemSchema = new Schema<ICartItem>(
       index: true,
     },
 
+    // ✅ Snapshot public code
+    productCode: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
     // OPTIONAL
     variantId: {
       type: Schema.Types.ObjectId,
@@ -73,6 +85,11 @@ const CartItemSchema = new Schema<ICartItem>(
       min: 1,
       default: 1,
     },
+    isSelected: {
+      type: Boolean,
+      default: true, // ✅ CRITICAL
+    },
+
 
     // snapshots
     title: { type: String, required: true, trim: true },
@@ -133,7 +150,11 @@ CartSchema.pre("save", function (next) {
           it.colorKey = ck.length ? ck : null;
         }
 
-        // normalize title/image (avoid accidental blanks)
+        // normalize productCode/title/image
+        if (typeof it.productCode === "string") it.productCode = it.productCode.trim();
+        if (typeof (it as any).isSelected !== "boolean") {
+          (it as any).isSelected = true;
+        }
         if (typeof it.title === "string") it.title = it.title.trim();
         if (typeof it.image === "string") it.image = it.image.trim();
       });

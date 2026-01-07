@@ -3,6 +3,16 @@ import { sendSignupOtp, verifySignupOtp } from "../controllers/user/auth.otp.con
 import { registerUserAfterOtp } from "../controllers/user/auth.controller";
 import { verifyUser } from "../middleware/user.auth.middleware";
 import { meUser, loginUser, logoutUser } from "../controllers/user/auth.session.controller"; 
+import {
+  listAddresses,
+  addAddress,
+  updateAddress,
+  deleteAddress,
+  setDefaultAddress,
+} from "../controllers/user/address.controller";
+import { createCodOrder } from "../controllers/user/order.controller";
+import { getCheckoutSummary } from "../controllers/user/checkout.controller";
+
 
 const router = Router();
 
@@ -15,5 +25,16 @@ router.post("/auth/register", registerUserAfterOtp);
 router.post("/auth/login", loginUser);
 router.post("/auth/logout", logoutUser);
 router.get("/auth/me", verifyUser, meUser);
+
+//address
+router.get("/addresses", verifyUser, listAddresses);
+router.post("/addresses", verifyUser, addAddress);
+router.patch("/addresses/:addressId", verifyUser, updateAddress);
+router.patch("/addresses/:addressId/default", verifyUser, setDefaultAddress);
+router.delete("/addresses/:addressId", verifyUser, deleteAddress);
+// Check OUt Summary 
+router.get("/checkout/summary", verifyUser, getCheckoutSummary);
+// order
+router.post("/orders", verifyUser, createCodOrder);    
 
 export default router;

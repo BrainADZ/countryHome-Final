@@ -21,6 +21,7 @@ import {
 } from "../controllers/admin/product.controller";
 import { uploadProductImages, uploadCategoryImage } from "../middleware/upload.middleware.js";
 import { upsertBannerByKey} from "../controllers/admin/banner.admin.controller.js";
+import { adminGetUsers } from "../controllers/user/auth.controller.js";
 
 const router = Router();
 
@@ -51,5 +52,7 @@ router.delete("/products/:id", verifyAdmin, deleteProduct);
 
 // ---------- PRODUCTS ROUTES ----------
 router.post("/:key", verifyAdmin, uploadCategoryImage, upsertBannerByKey);
+// ---------- USERS ROUTES ----------
+router.get("/users", verifyAdmin, adminGetUsers);
 
 export default router;

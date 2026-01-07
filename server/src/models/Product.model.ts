@@ -184,12 +184,12 @@ ProductSchema.pre<IProduct>("validate", async function (next) {
 
       let nextNumber = 1;
       if (last?.productId) {
-        const numericPart = last.productId.replace(/^MECH/, "");
+        const numericPart = last.productId.replace(/^CH/, "");
         const parsed = parseInt(numericPart, 10);
         if (!Number.isNaN(parsed)) nextNumber = parsed + 1;
       }
 
-      this.productId = `MECH${String(nextNumber).padStart(6, "0")}`;
+      this.productId = `CH${String(nextNumber).padStart(6, "0")}`;
     }
 
     // ✅ compute stock on validate as well (safe)

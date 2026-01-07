@@ -10,6 +10,11 @@ import { Cart } from "../../models/Cart.model";
 const JWT_EXPIRES_IN = "7h"; // ✅ as you want
 const COOKIE_MAX_AGE_MS = 7 * 60 * 60 * 1000; // ✅ 7 hours
 
+const toInt = (v: any, def: number) => {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return def;
+  return Math.floor(n);
+};
 function getCookieOptions(req: Request) {
   const isProd = process.env.NODE_ENV === "production";
 
@@ -150,5 +155,48 @@ export const registerUserAfterOtp = async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error("registerUserAfterOtp error:", err);
     return res.status(500).json({ message: err?.message || "Signup failed" });
+  }
+};
+
+export const adminGetUsers = async (req: Request, res: Response) => {
+  try {
+    const page = toInt(req.query.page, 1);
+    const limit = Math.min(toInt(req.query.limit, 20), 100);
+    const q = String(req.query.q || "").trim();
+
+    const filter: any = {};
+    if (q) {
+      filter.$or = [
+        { name: { $regex: q, $options: "i" } },
+        { email: { $regex: q, $options: "i" } },
+        { phone: { $regex: q, $options: "i" } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [total, users] = await Promise.all([
+      User.countDocuments(filter),
+      User.find(filter)
+        .select("name email phone role emailVerified createdAt updatedAt") // keep minimal
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+    ]);
+
+    return res.status(200).json({
+      message: "Users fetched",
+      data: {
+        users,
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+    });
+  } catch (err: any) {
+    console.error("adminGetUsers error:", err);
+    return res.status(500).json({ message: err?.message || "Failed to fetch users" });
   }
 };
