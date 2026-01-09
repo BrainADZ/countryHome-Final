@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 "use client";
 
 import { useState } from "react";
@@ -13,9 +13,11 @@ export default function Sidemenu() {
 
   const mainItems = [
     { label: "Dashboard", icon: Home, href: "/admin/dashboard" },
-    // { label: "Users", icon: Users, href: "/admin/users" },
+    { label: "Users", icon: Users, href: "/admin/users" },
     { label: "Category", icon: Layers, href: "/admin/categories" },
     { label: "Banner", icon: Layers, href: "/admin/banner" },
+    { label: "Order", icon: Layers, href: "/admin/order" },
+
     
   ];
 
@@ -95,79 +97,119 @@ export default function Sidemenu() {
           })}
 
           {/* Products group with dropdown */}
-          <div className="space-y-1">
-            {/* Parent button (Products) */}
-            <button
-              type="button"
-              onClick={() => setProductsOpen((prev) => !prev)}
-              className={`group relative flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-colors
-              ${
-                isProductsSection
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              <Box
-                size={20}
-                className={isProductsSection ? "text-blue-600" : "text-gray-500"}
-              />
+{/* Products group with dropdown */}
+<div className="space-y-1">
+  {/* wrapper for flyout */}
+  <div className="group relative">
+    {/* Parent button (Products) */}
+    <button
+      type="button"
+      onClick={() => {
+        // expanded -> toggle dropdown
+        if (!collapsed) setProductsOpen((prev) => !prev);
+        // collapsed -> do nothing (flyout will show on hover)
+      }}
+      className={`group relative flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-colors
+      ${
+        isProductsSection
+          ? "bg-blue-50 text-blue-700"
+          : "text-gray-700 hover:bg-gray-100"
+      }`}
+    >
+      <Box
+        size={20}
+        className={isProductsSection ? "text-blue-600" : "text-gray-500"}
+      />
 
-              {!collapsed && (
-                <>
-                  <span className="ml-3 flex-1 text-left truncate">Products</span>
-                  <ChevronDown
-                    size={16}
-                    className={`ml-2 transition-transform ${
-                      productsOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </>
-              )}
+      {!collapsed && (
+        <>
+          <span className="ml-3 flex-1 text-left truncate">Products</span>
+          <ChevronDown
+            size={16}
+            className={`ml-2 transition-transform ${productsOpen ? "rotate-180" : ""}`}
+          />
+        </>
+      )}
 
-              {collapsed && (
-                <span
-                  className="pointer-events-none absolute left-full top-1/2 ml-3 -translate-y-1/2 whitespace-nowrap
-                  rounded-md bg-gray-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-lg
-                  transition-opacity duration-150 group-hover:opacity-100"
-                >
-                  Products
-                </span>
-              )}
+      {collapsed && (
+        <span
+          className="pointer-events-none absolute left-full top-1/2 ml-3 -translate-y-1/2 whitespace-nowrap
+          rounded-md bg-gray-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-lg
+          transition-opacity duration-150 group-hover:opacity-100"
+        >
+          Products
+        </span>
+      )}
 
-              {isProductsSection && (
-                <span className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-blue-600" />
-              )}
-            </button>
+      {isProductsSection && (
+        <span className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-blue-600" />
+      )}
+    </button>
 
-            {/* Submenu – only show when sidebar is expanded */}
-            {!collapsed && productsOpen && (
-              <div className="ml-6 space-y-1 border-l border-gray-200 pl-2">
-                <Link
-                  href="/admin/products"
-                  className={`flex items-center rounded-md px-3 py-1.5 text-xs font-medium transition-colors
-                  ${
-                    pathname === "/admin/products"
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  <span className="truncate">Product List</span>
-                </Link>
+    {/* Submenu – expanded */}
+    {!collapsed && productsOpen && (
+      <div className="ml-6 space-y-1 border-l border-gray-200 pl-2">
+        <Link
+          href="/admin/products"
+          className={`flex items-center rounded-md px-3 py-1.5 text-xs font-medium transition-colors
+          ${
+            pathname === "/admin/products"
+              ? "bg-blue-50 text-blue-700"
+              : "text-gray-600 hover:bg-gray-100"
+          }`}
+        >
+          <span className="truncate">Product List</span>
+        </Link>
 
-                <Link
-                  href="/admin/products/products-add"
-                  className={`flex items-center rounded-md px-3 py-1.5 text-xs font-medium transition-colors
-                  ${
-                    pathname === "/admin/products/products-add"
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  <span className="truncate">Add Product</span>
-                </Link>
-              </div>
-            )}
-          </div>
+        <Link
+          href="/admin/products/products-add"
+          className={`flex items-center rounded-md px-3 py-1.5 text-xs font-medium transition-colors
+          ${
+            pathname === "/admin/products/products-add"
+              ? "bg-blue-50 text-blue-700"
+              : "text-gray-600 hover:bg-gray-100"
+          }`}
+        >
+          <span className="truncate">Add Product</span>
+        </Link>
+      </div>
+    )}
+
+    {/* ✅ Flyout submenu – collapsed (hover on Products icon) */}
+    {collapsed && (
+      <div
+        className="invisible absolute left-full top-0 z-50 ml-2 w-48 rounded-md border bg-white p-2 shadow-lg
+        opacity-0 transition-all duration-150
+        group-hover:visible group-hover:opacity-100"
+      >
+        <Link
+          href="/admin/products"
+          className={`flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors
+          ${
+            pathname === "/admin/products"
+              ? "bg-blue-50 text-blue-700"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          Product List
+        </Link>
+
+        <Link
+          href="/admin/products/products-add"
+          className={`mt-1 flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors
+          ${
+            pathname === "/admin/products/products-add"
+              ? "bg-blue-50 text-blue-700"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          Add Product
+        </Link>
+      </div>
+    )}
+  </div>
+</div>
+
         </nav>
 
         {/* Logout */}

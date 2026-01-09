@@ -24,8 +24,8 @@ router.patch("/cart/item/options",authOptional, updateCartItemOptions);
 router.patch("/cart/qty",authOptional, updateCartQty);
 router.delete("/cart/item/:itemId",authOptional, removeCartItem);
 router.delete("/cart/clear",authOptional, clearCart);
-router.patch("/cart/item/select", setCartItemSelected);
-router.patch("/cart/select-all", setCartSelectAll);
+router.patch("/cart/item/select",authOptional, setCartItemSelected);
+router.patch("/cart/select-all",authOptional, setCartSelectAll);
 
 
 /**

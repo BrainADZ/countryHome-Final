@@ -121,6 +121,54 @@ const getEnrichedCartById = async (cartId: any) => {
   if (!cartLean) return null;
   return enrichCartLean(cartLean);
 };
+const mergeGuestCartIntoUserCart = async (userId: any, guestId: string) => {
+  const userOwnerKey = `u:${String(userId)}`;
+  const guestOwnerKey = `g:${String(guestId)}`;
+
+  const [userCart, guestCart] = await Promise.all([
+    Cart.findOne({ ownerKey: userOwnerKey }),
+    Cart.findOne({ ownerKey: guestOwnerKey }),
+  ]);
+
+  if (!guestCart || !guestCart.items?.length) {
+    return userCart || null;
+  }
+
+  const target = userCart || (await Cart.create({
+    ownerKey: userOwnerKey,
+    userId,
+    guestId: null,
+    items: [],
+  }));
+
+  // merge items (same productId+variantId+colorKey)
+  for (const gi of guestCart.items as any[]) {
+    const idx = target.items.findIndex((ui: any) => (
+      String(ui.productId) === String(gi.productId) &&
+      String(ui.variantId || "") === String(gi.variantId || "") &&
+      String((ui.colorKey || "").toLowerCase()) === String((gi.colorKey || "").toLowerCase())
+    ));
+
+    if (idx > -1) {
+      target.items[idx].qty = Number(target.items[idx].qty || 0) + Number(gi.qty || 0);
+      target.items[idx].updatedAt = new Date();
+      // keep selected true if any of them is selected
+      target.items[idx].isSelected = Boolean(target.items[idx].isSelected) || Boolean(gi.isSelected);
+    } else {
+      target.items.push({
+        ...gi,
+        _id: new Types.ObjectId(), // new line id
+        isSelected: gi.isSelected ?? true,
+        addedAt: gi.addedAt || new Date(),
+        updatedAt: new Date(),
+      });
+    }
+  }
+
+  await target.save();
+  await Cart.deleteOne({ _id: guestCart._id }); // remove guest cart after merge
+  return target;
+};
 
 /** =========================
  * Controllers
@@ -132,8 +180,17 @@ const getEnrichedCartById = async (cartId: any) => {
  */
 export const getMyCart = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { ownerKey } = getOwner(req, res);
+    const userId = getUserId(req);
 
+    // ✅ If logged-in + guest cookie exists, merge once
+    const guestId = (req as any).cookies?.[GUEST_COOKIE];
+    if (userId && guestId) {
+      await mergeGuestCartIntoUserCart(userId, String(guestId));
+      // optional: clear guest cookie after merge (recommended)
+      res.clearCookie(GUEST_COOKIE, { path: "/" });
+    }
+
+    const { ownerKey } = getOwner(req, res);
     const enriched = await getEnrichedCartByOwnerKey(ownerKey);
 
     return res.status(200).json({
@@ -144,6 +201,7 @@ export const getMyCart = async (req: Request, res: Response, next: NextFunction)
     next(err);
   }
 };
+
 
 /**
  * POST /api/common/cart/add
@@ -232,42 +290,49 @@ export const addToCart = async (req: any, res: any) => {
       return sameProduct && sameVariant && sameColor;
     });
 // ✅ BuyNow behavior: optionally unselect all other items
+// ✅ BuyNow behavior: optionally unselect all other items
 if (clearOthers === true) {
   for (const it of cart.items as any[]) it.isSelected = false;
 }
 
-    const payload: any = {
-      productId,
-      productCode,
-      variantId: hasVariants ? variantId : null,
-      colorKey: normColorKey,
-      qty: safeQty,
-    isSelected: Boolean(selectOnAdd || true), 
-      title: productTitle,
-      image: resolvedImage,
-      mrp: resolvedMrp,
-      salePrice: resolvedSalePrice,
-      addedAt: new Date(),
-      updatedAt: new Date(),
-    };
+// ✅ Selection rules:
+// - default add-to-cart: selected true
+// - buyNow: selected true + clearOthers already handled
+const finalSelected = true;
 
-    if (idx >= 0) {
-      cart.items[idx].qty += safeQty;
-      cart.items[idx].updatedAt = new Date();
+const payload: any = {
+  productId,
+  productCode,
+  variantId: hasVariants ? variantId : null,
+  colorKey: normColorKey,
+  qty: safeQty,
+  isSelected: finalSelected,
+  title: productTitle,
+  image: resolvedImage,
+  mrp: resolvedMrp,
+  salePrice: resolvedSalePrice,
+  addedAt: new Date(),
+  updatedAt: new Date(),
+};
 
-      // refresh snapshot (optional, but useful)
-      cart.items[idx].title = payload.title;
-      cart.items[idx].productCode = payload.productCode;
-      cart.items[idx].image = payload.image;
-      cart.items[idx].mrp = payload.mrp;
-    cart.items[idx].isSelected = Boolean(selectOnAdd);
-      cart.items[idx].salePrice = payload.salePrice;
-      cart.items[idx].colorKey = payload.colorKey;
-      cart.items[idx].variantId = payload.variantId;
-    } else {
-      cart.items.push(payload);
-    }
+if (idx >= 0) {
+  cart.items[idx].qty += safeQty;
+  cart.items[idx].updatedAt = new Date();
 
+  // refresh snapshot
+  cart.items[idx].title = payload.title;
+  cart.items[idx].productCode = payload.productCode;
+  cart.items[idx].image = payload.image;
+  cart.items[idx].mrp = payload.mrp;
+  cart.items[idx].salePrice = payload.salePrice;
+  cart.items[idx].colorKey = payload.colorKey;
+  cart.items[idx].variantId = payload.variantId;
+
+  // ✅ keep selected true unless BuyNow cleared others
+  cart.items[idx].isSelected = true;
+} else {
+  cart.items.unshift(payload);
+}
     await cart.save();
 
     // ✅ return enriched cart (same as GET)
@@ -293,12 +358,12 @@ if (clearOthers === true) {
 export const updateCartQty = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { ownerKey, userId, guestId } = getOwner(req, res);
-
     const { itemId, qty } = req.body as any;
 
     if (!Types.ObjectId.isValid(itemId)) {
       return res.status(400).json({ message: "Invalid itemId" });
     }
+
     const newQty = toPositiveInt(qty);
     if (!newQty) {
       return res.status(400).json({ message: "Invalid qty" });
@@ -309,23 +374,37 @@ export const updateCartQty = async (req: Request, res: Response, next: NextFunct
     const item: any = cart.items.find((it: any) => String(it._id) === String(itemId));
     if (!item) return res.status(404).json({ message: "Cart item not found" });
 
-    const product = await Product.findById(item.productId).select("isActive variants").lean();
+    const product = await Product.findById(item.productId)
+      .select("isActive variants baseStock stock quantity")
+      .lean();
 
     if (!product || (product as any).isActive === false) {
       return res.status(409).json({ message: "Product unavailable now" });
     }
 
-    const variant = ((product as any).variants || []).find(
-      (v: any) => String(v._id) === String(item.variantId)
-    );
-    if (!variant) {
-      return res.status(409).json({ message: "Selected variant no longer exists" });
+    const hasVariants = Array.isArray((product as any).variants) && (product as any).variants.length > 0;
+
+    let available = 0;
+
+    if (hasVariants) {
+      const variant = ((product as any).variants || []).find(
+        (v: any) => String(v._id) === String(item.variantId)
+      );
+      if (!variant) {
+        return res.status(409).json({ message: "Selected variant no longer exists" });
+      }
+
+      available = Number(variant.quantity ?? variant.stock ?? 0);
+      if (available <= 0) return res.status(409).json({ message: "Selected variant out of stock" });
+    } else {
+      // ✅ No variants => validate against product-level stock
+      available = Number((product as any).baseStock ?? (product as any).stock ?? (product as any).quantity ?? 0);
+      if (available <= 0) return res.status(409).json({ message: "Product out of stock" });
+
+      // keep cart line clean
+      item.variantId = null;
     }
 
-    const available = Number(variant.quantity || 0);
-    if (available <= 0) {
-      return res.status(409).json({ message: "Selected variant out of stock" });
-    }
     if (newQty > available) {
       return res.status(409).json({ message: "Quantity exceeds available stock", available });
     }
@@ -335,13 +414,13 @@ export const updateCartQty = async (req: Request, res: Response, next: NextFunct
 
     await cart.save();
 
-    // ✅ return enriched cart
     const enriched = await getEnrichedCartById(cart._id);
     return res.status(200).json({ message: "Quantity updated", data: enriched || cart });
   } catch (err) {
     next(err);
   }
 };
+
 
 /**
  * PATCH /api/common/cart/item/options
@@ -410,19 +489,15 @@ export const updateCartItemOptions = async (req: Request, res: Response, next: N
     const userId = getUserId(req);
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const { itemId, variantId, colorKey } = req.body as any;
+    const { itemId, variantId = null, colorKey = null } = req.body as any;
 
     if (!Types.ObjectId.isValid(itemId)) {
       return res.status(400).json({ message: "Invalid itemId" });
-    }
-    if (!Types.ObjectId.isValid(variantId)) {
-      return res.status(400).json({ message: "variantId is required and must be valid" });
     }
 
     const normalizedColor = normalizeColorKey(colorKey);
     const ownerKey = `u:${String(userId)}`;
 
-    // ✅ use ownerKey (consistent with the rest of your cart system)
     const cart = await Cart.findOne({ ownerKey });
     if (!cart) {
       return res.status(200).json({ message: "Cart empty", data: { items: [] } });
@@ -432,21 +507,16 @@ export const updateCartItemOptions = async (req: Request, res: Response, next: N
     if (!current) return res.status(404).json({ message: "Cart item not found" });
 
     const product = await Product.findById(current.productId)
-      .select("isActive variants colors")
+      .select("isActive variants colors mrp salePrice baseStock stock quantity")
       .lean();
 
     if (!product || (product as any).isActive === false) {
       return res.status(409).json({ message: "Product unavailable now" });
     }
 
-    const newVariant = ((product as any).variants || []).find(
-      (v: any) => String(v._id) === String(variantId)
-    );
-    if (!newVariant) {
-      return res.status(400).json({ message: "Variant not found for this product" });
-    }
+    const hasVariants = Array.isArray((product as any).variants) && (product as any).variants.length > 0;
 
-    // validate color belongs to product.colors (optional)
+    // ✅ validate color belongs to product.colors (optional)
     if (normalizedColor) {
       const ok = ((product as any).colors || []).some((c: any) => {
         const nm = String(c?.name || "").trim().toLowerCase();
@@ -455,25 +525,59 @@ export const updateCartItemOptions = async (req: Request, res: Response, next: N
       if (!ok) return res.status(400).json({ message: "Invalid color for this product" });
     }
 
-    const available = Number(newVariant.quantity || 0);
-    if (available <= 0) return res.status(409).json({ message: "Selected variant is out of stock" });
+    // ✅ resolve variant only if product has variants
+    let newVariant: any = null;
+    let nextVariantId: string | null = null;
+
+    if (hasVariants) {
+      if (!variantId || !Types.ObjectId.isValid(variantId)) {
+        return res.status(400).json({ message: "variantId is required and must be valid" });
+      }
+
+      newVariant = ((product as any).variants || []).find(
+        (v: any) => String(v._id) === String(variantId)
+      );
+      if (!newVariant) {
+        return res.status(400).json({ message: "Variant not found for this product" });
+      }
+
+      nextVariantId = String(variantId);
+    } else {
+      // no variants => force null
+      newVariant = null;
+      nextVariantId = null;
+    }
+
+    const nextColorKey = normalizedColor; // may be null
+
+    // ✅ Stock validate (variant > product)
+    const available = hasVariants
+      ? Number(newVariant?.quantity ?? newVariant?.stock ?? 0)
+      : Number((product as any).baseStock ?? (product as any).stock ?? (product as any).quantity ?? 0);
+
+    if (available <= 0) {
+      return res.status(409).json({ message: hasVariants ? "Selected variant is out of stock" : "Product out of stock" });
+    }
     if (Number(current.qty || 1) > available) {
       return res.status(409).json({
-        message: "Current quantity exceeds available stock for selected variant",
+        message: "Current quantity exceeds available stock",
         available,
       });
     }
 
-    const nextVariantId = String(variantId);
-    const nextColorKey = normalizedColor;
+    // ✅ Price snapshot (variant > product)
+    const mrpSnap = hasVariants ? Number(newVariant?.mrp || 0) : Number((product as any).mrp || 0);
+    const saleSnap = hasVariants
+      ? Number(newVariant?.salePrice || 0)
+      : Number((product as any).salePrice || (product as any).mrp || 0);
 
-    // merge if same line exists
-    const targetIdx = cart.items.findIndex((it: any) =>
-      lineMatches(it, String(current.productId), nextVariantId, nextColorKey)
-    );
-
-    const mrpSnap = Number(newVariant.mrp || 0);
-    const saleSnap = Number(newVariant.salePrice || 0);
+    // ✅ merge if same line exists
+    const targetIdx = cart.items.findIndex((it: any) => {
+      const sameProduct = String(it.productId) === String(current.productId);
+      const sameVariant = String(it.variantId || "") === String(nextVariantId || "");
+      const sameColor = String((it.colorKey || "").toLowerCase()) === String((nextColorKey || "").toLowerCase());
+      return sameProduct && sameVariant && sameColor;
+    });
 
     if (targetIdx > -1) {
       const target: any = cart.items[targetIdx];
@@ -482,13 +586,13 @@ export const updateCartItemOptions = async (req: Request, res: Response, next: N
         const mergedQty = Number(target.qty || 0) + Number(current.qty || 0);
         if (mergedQty > available) {
           return res.status(409).json({
-            message: "Merged quantity exceeds available stock for selected variant",
+            message: "Merged quantity exceeds available stock",
             available,
           });
         }
 
         target.qty = mergedQty;
-        target.variantId = new Types.ObjectId(variantId);
+        target.variantId = hasVariants ? new Types.ObjectId(nextVariantId as string) : null;
         target.colorKey = nextColorKey;
         target.mrp = mrpSnap;
         target.salePrice = saleSnap;
@@ -496,14 +600,14 @@ export const updateCartItemOptions = async (req: Request, res: Response, next: N
 
         cart.items = cart.items.filter((it: any) => String(it._id) !== String(current._id)) as any;
       } else {
-        current.variantId = new Types.ObjectId(variantId);
+        current.variantId = hasVariants ? new Types.ObjectId(nextVariantId as string) : null;
         current.colorKey = nextColorKey;
         current.mrp = mrpSnap;
         current.salePrice = saleSnap;
         current.updatedAt = new Date();
       }
     } else {
-      current.variantId = new Types.ObjectId(variantId);
+      current.variantId = hasVariants ? new Types.ObjectId(nextVariantId as string) : null;
       current.colorKey = nextColorKey;
       current.mrp = mrpSnap;
       current.salePrice = saleSnap;
@@ -512,13 +616,13 @@ export const updateCartItemOptions = async (req: Request, res: Response, next: N
 
     await cart.save();
 
-    // ✅ return enriched cart (fixes UI blanking)
     const enriched = await getEnrichedCartByOwnerKey(ownerKey);
     return res.status(200).json({ message: "Item options updated", data: enriched || cart });
   } catch (err) {
     next(err);
   }
 };
+
 
 /**
  * DELETE /api/common/cart/item/:itemId

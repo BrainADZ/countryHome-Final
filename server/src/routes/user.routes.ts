@@ -10,7 +10,7 @@ import {
   deleteAddress,
   setDefaultAddress,
 } from "../controllers/user/address.controller";
-import { createCodOrder } from "../controllers/user/order.controller";
+import { createCodOrder, downloadInvoicePdf, getMyOrders, getOrderById } from "../controllers/user/order.controller";
 import { getCheckoutSummary } from "../controllers/user/checkout.controller";
 
 
@@ -36,5 +36,8 @@ router.delete("/addresses/:addressId", verifyUser, deleteAddress);
 router.get("/checkout/summary", verifyUser, getCheckoutSummary);
 // order
 router.post("/orders", verifyUser, createCodOrder);    
+router.get("/orders", verifyUser, getMyOrders);
+router.get("/orders/:orderId", verifyUser, getOrderById);
+router.get("/orders/:orderId/invoice", verifyUser, downloadInvoicePdf);
 
 export default router;

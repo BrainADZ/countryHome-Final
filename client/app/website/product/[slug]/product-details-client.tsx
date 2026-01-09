@@ -89,6 +89,9 @@ async function addToCartApi(args: {
   qty: number;
   variantId?: string;
   colorKey?: string | null;
+  // ✅ NEW (for buy-now selection flow)
+  selectOnAdd?: boolean;
+  clearOthers?: boolean;
 }) {
   const { productId, qty, variantId, colorKey } = args;
 
@@ -105,6 +108,9 @@ async function addToCartApi(args: {
       variantId,
       colorKey: colorKey || null,
       qty,
+       // ✅ new flags
+  selectOnAdd: Boolean(args.selectOnAdd),
+  clearOthers: Boolean(args.clearOthers),
     }),
   });
 
@@ -508,6 +514,9 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
         qty,
         variantId: hasVariants ? String(selectedVariant?._id) : undefined,
         colorKey: selectedColorName ? selectedColorName.trim().toLowerCase() : null,
+          // ✅ Add-to-cart does not disturb other selections
+  selectOnAdd: false,
+  clearOthers: false,
       });
       setAddedOnce(true);
       setTimeout(() => setAddedOnce(false), 1500);
@@ -536,6 +545,9 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
         qty,
         variantId: hasVariants ? String(selectedVariant?._id) : undefined,
         colorKey: selectedColorName ? selectedColorName.trim().toLowerCase() : null,
+        // ✅ Buy-now: only this item selected
+  selectOnAdd: true,
+  clearOthers: true,
       });
 
       // ✅ redirect to cart/checkout as per your flow

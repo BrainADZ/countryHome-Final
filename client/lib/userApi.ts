@@ -1,4 +1,3 @@
-// src/lib/usersApi.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
@@ -31,11 +30,23 @@ export type MeUser = {
 
 export async function meUser(): Promise<MeUser | null> {
   try {
+    // expected: { data: { user: MeUser } }
     const data = await apiFetch<{ user: MeUser }>(`${API_BASE}/users/auth/me`, { method: "GET" });
     return data?.user || null;
   } catch {
     return null;
   }
+}
+
+// ✅ ADD THIS
+export async function updateMeUser(payload: Partial<Pick<MeUser, "name" | "email" | "phone">>) {
+  // expected: { data: { user: MeUser } } (or user directly if your backend returns that)
+  const data = await apiFetch<{ user: MeUser }>(`${API_BASE}/users/auth/me`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+  return data?.user || null;
 }
 
 export async function loginUser(email: string, password: string) {

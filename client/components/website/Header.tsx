@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 "use client";
@@ -227,7 +228,7 @@ export function WebsiteHeader() {
 
     if (!user) {
       return (
-        <button onClick={openLogin} className="hover:text-[#82008F]">
+        <button onClick={openLogin} className="hover:text-[#82008F] cursor-pointer">
           Login
         </button>
       );
@@ -237,7 +238,7 @@ export function WebsiteHeader() {
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setOpenMenu((v) => !v)}
-          className="flex items-center gap-2 hover:text-[#82008F]"
+          className="flex items-center gap-2 hover:text-[#82008F] cursor-pointer"
           type="button"
         >
           <UserIcon className="h-5 w-5" />
@@ -246,9 +247,9 @@ export function WebsiteHeader() {
         </button>
 
         {openMenu && (
-          <div className="absolute right-0 mt-2 w-52 rounded-xl border bg-white shadow-lg overflow-hidden">
+          <div className="absolute left-0 mt-2 w-52  border bg-white shadow-lg overflow-hidden">
             <Link
-              href="/website/account"
+              href="/website/user/dashboard"
               className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
               onClick={() => setOpenMenu(false)}
             >
