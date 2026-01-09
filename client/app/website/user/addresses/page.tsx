@@ -10,7 +10,7 @@ import {
   setDefaultAddress,
   type Address,
 } from "@/lib/checkoutApi";
-
+export const dynamic = "force-dynamic";
 export default function WebsiteUserAddressesPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);

@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+export const dynamic = "force-dynamic";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 

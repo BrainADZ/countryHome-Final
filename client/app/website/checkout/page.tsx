@@ -14,7 +14,7 @@ import {
   createCodOrder,
   type Address,
 } from "@/lib/checkoutApi";
-
+export const dynamic = "force-dynamic";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 function resolveImageUrl(path?: string) {

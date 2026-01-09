@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import { WebsiteHeader } from "@/components/website/Header";
 import Footer from "@/components/website/Footer";
 import CategoryBar from "@/components/website/CategoryBar";
+export const dynamic = "force-dynamic";
 
 export default function WebsiteLayout({ children }: { children: ReactNode }) {
   return (

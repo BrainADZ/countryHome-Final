@@ -20,6 +20,7 @@ import {
   setCartSelectAll,
 } from "@/lib/cartApi";
 
+export const dynamic = "force-dynamic";
 
 function money(n: number) {
   return `₹${Number(n || 0).toFixed(0)}`;
