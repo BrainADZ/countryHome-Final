@@ -30,7 +30,7 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts",
     "src", "scripts"
-    
+, "app/website/help/Faqs"    
   ],
   "exclude": ["node_modules"]
 }

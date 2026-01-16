@@ -34,8 +34,11 @@ export default function AdminProductsPage() {
   // basic fields
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
+  const [isSlugDirty, setIsSlugDirty] = useState(false);
+
   const [description, setDescription] = useState("");
   // const [features, setFeatures] = useState("");
+  const [productId, setProductId] = useState(""); // ✅ SKU
   const [featuresText, setFeaturesText] = useState("");
 
   const [baseMrp, setBaseMrp] = useState("");
@@ -95,20 +98,23 @@ export default function AdminProductsPage() {
     if (typeof window === "undefined") return null;
     return localStorage.getItem("admin_token");
   };
+  const slugify = (value: string) =>
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
+
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
-    if (!slug) {
-      const generated = value
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "-")
-        .replace(/-+/g, "-");
-      setSlug(generated);
+
+    // ✅ If user has not manually edited slug, keep auto-updating
+    if (!isSlugDirty) {
+      setSlug(slugify(value));
     }
   };
-
   // categories grouped (parent + children)
   const parents = useMemo(
     () => categories.filter((c) => !c.parentCategory),
@@ -370,6 +376,11 @@ export default function AdminProductsPage() {
       setSubmitting(false);
       return;
     }
+    if (!productId.trim()) {
+      setError("SKU / Product ID is required");
+      setSubmitting(false);
+      return;
+    }
 
     if (!parentCategoryId) {
       setError("Please select a category");
@@ -453,6 +464,7 @@ export default function AdminProductsPage() {
       // ---- FormData (multipart/form-data) ----
       const formData = new FormData();
       formData.append("title", title);
+      formData.append("productId", productId.trim()); // ✅ MUST
       formData.append("slug", slug);
       formData.append("description", description.trim());
       formData.append("features", featuresText.trim()); // ✅ NEW
@@ -520,6 +532,9 @@ export default function AdminProductsPage() {
 
       // reset form
       setTitle("");
+      setIsSlugDirty(false);
+
+      setProductId("");
       setSlug("");
       setDescription("");
       // setFeatures("");
@@ -671,6 +686,7 @@ export default function AdminProductsPage() {
                   />
                 </div>
 
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700 flex items-center gap-1">
                     URL Slug <span className="text-red-500">*</span>
@@ -678,7 +694,10 @@ export default function AdminProductsPage() {
                   <input
                     type="text"
                     value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
+                    onChange={(e) => {
+                      setIsSlugDirty(true);
+                      setSlug(e.target.value);
+                    }}
                     className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none transition-all focus:ring-1 focus:ring-slate-900 focus:border-slate-900 bg-white"
                     placeholder="auto-generated-from-title"
                     required
@@ -696,6 +715,23 @@ export default function AdminProductsPage() {
                       />
                     </svg>
                     Auto-generated from title, you can customize it.
+                  </p>
+                </div>
+                {/* Sku ID */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 flex items-center gap-1">
+                    SKU / Product ID <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={productId}
+                    onChange={(e) => setProductId(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-sm outline-none transition-all focus:ring-1 focus:ring-slate-900 focus:border-slate-900 bg-white"
+                    placeholder="e.g. SKU-RED-001"
+                    required
+                  />
+                  <p className="text-xs text-slate-500">
+                    Client ka unique SKU yahan enter karein (same will be saved as Product ID).
                   </p>
                 </div>
 
@@ -1251,7 +1287,7 @@ export default function AdminProductsPage() {
                       </th>
                       <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
                         Weight
-                      </th> 
+                      </th>
                       <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
                         Combo Text
                       </th>

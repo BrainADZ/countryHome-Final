@@ -3,34 +3,32 @@ import { Schema, model, Document, Types } from "mongoose";
 // -------------------- COLORS (Product level) --------------------
 export interface IProductColor {
   _id?: Types.ObjectId;
-  name: string;          // e.g. Black, Red
-  hex?: string;          // optional: #000000
-  images: string[];      // gallery for this color
-  orderIndex: number;    // 0 = default first
+  name: string;
+  hex?: string;
+  images: string[];
+  orderIndex: number;
 }
 
 export interface IProductVariant {
   _id?: Types.ObjectId;
 
-  // commercial identity (pick one dimension)
   label?: string;
   weight?: string;
   size?: string;
   comboText?: string;
 
-  // NOTE: keep for backward compatibility only (not used for combinations)
+  // backward compatibility only
   color?: string;
 
   quantity: number;
   mrp: number;
   salePrice: number;
 
-  // optional: for combo/style variants (when variant itself changes visuals)
   images: string[];
 }
 
 export interface IProduct extends Document {
-  productId: string; // MECH000001 etc.
+  productId: string; // ✅ manual SKU now
 
   title: string;
   slug: string;
@@ -40,17 +38,15 @@ export interface IProduct extends Document {
   featureImage?: string;
   galleryImages: string[];
 
-  // ✅ NEW: product-level colors
   colors: IProductColor[];
 
   mrp: number;
   salePrice: number;
 
-  // STOCK (base + calculated)
-  baseStock: number;          // used when no variants
-  totalStock: number;         // auto-calc (variants sum OR baseStock)
-  lowStockThreshold: number;  // default 5
-  isLowStock: boolean;        // auto flag based on threshold
+  baseStock: number;
+  totalStock: number;
+  lowStockThreshold: number;
+  isLowStock: boolean;
 
   variants: IProductVariant[];
 
@@ -75,14 +71,11 @@ const ColorSchema = new Schema<IProductColor>(
 const VariantSchema = new Schema<IProductVariant>(
   {
     label: { type: String },
-
     weight: { type: String },
     size: { type: String },
-
-    // keep comboText (variant identity)
     comboText: { type: String },
 
-    // keep color only for backward compatibility
+    // backward compatibility
     color: { type: String },
 
     quantity: { type: Number, required: true, default: 0 },
@@ -102,6 +95,8 @@ const ProductSchema = new Schema<IProduct>(
       unique: true,
       index: true,
       trim: true,
+      // OPTIONAL: SKU ko consistent rakhna ho to uncomment:
+      // uppercase: true,
     },
 
     title: { type: String, required: true, trim: true },
@@ -113,7 +108,6 @@ const ProductSchema = new Schema<IProduct>(
     featureImage: { type: String },
     galleryImages: { type: [String], default: [] },
 
-    // ✅ NEW: colors array on product
     colors: { type: [ColorSchema], default: [] },
 
     mrp: { type: Number, required: true },
@@ -149,7 +143,6 @@ const ProductSchema = new Schema<IProduct>(
 );
 
 /**
- * Helper inside model:
  * totalStock = variants sum (if variants exist) else baseStock
  * isLowStock = totalStock <= lowStockThreshold
  */
@@ -171,41 +164,23 @@ const computeStock = (doc: IProduct) => {
   doc.isLowStock = doc.totalStock <= threshold;
 };
 
-/**
- * Auto-generate productId = MECH000001, MECH000002, ...
- */
-ProductSchema.pre<IProduct>("validate", async function (next) {
+// ✅ Manual SKU validation + stock compute
+ProductSchema.pre<IProduct>("validate", function (next) {
   try {
-    if (this.isNew && !this.productId) {
-      const last: { productId?: string } | null = await (this.constructor as any)
-        .findOne({}, { productId: 1 })
-        .sort({ createdAt: -1 })
-        .lean();
-
-      let nextNumber = 1;
-      if (last?.productId) {
-        const numericPart = last.productId.replace(/^CH/, "");
-        const parsed = parseInt(numericPart, 10);
-        if (!Number.isNaN(parsed)) nextNumber = parsed + 1;
-      }
-
-      this.productId = `CH${String(nextNumber).padStart(6, "0")}`;
+    // manual SKU must exist (schema already requires it)
+    // here we can add format rules if you want
+    if (this.productId) {
+      this.productId = String(this.productId).trim();
+      // OPTIONAL: allow only A-Z0-9_- (uncomment if needed)
+      // if (!/^[A-Za-z0-9_-]+$/.test(this.productId)) {
+      //   return next(new Error("Invalid productId(SKU) format."));
+      // }
     }
 
-    // ✅ compute stock on validate as well (safe)
     computeStock(this);
-
     next();
   } catch (e) {
     next(e as any);
-  }
-});
-
-ProductSchema.pre("findOneAndUpdate", function (next) {
-  try {
-    return next();
-  } catch (err) {
-    return next(err as any);
   }
 });
 

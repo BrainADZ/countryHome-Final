@@ -5,7 +5,7 @@ import { Product } from "../../models/Product.model";
 import { Category } from "../../models/Category.model";
 
 const makeSlug = (title: string) =>
-  title
+  String(title || "")
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9\s-]/g, "")
@@ -60,7 +60,7 @@ const normalizeArrayLike = (value: any): any[] => {
       .map((x) => x.k);
 
     if (numericKeys.length) {
-      return numericKeys.map((k) => value[k]);
+      return numericKeys.map((k) => (value as any)[k]);
     }
 
     if (Array.isArray((value as any).variants)) return (value as any).variants;
@@ -87,9 +87,7 @@ const getAllFilesAsArray = (req: Request): Express.Multer.File[] => {
     | undefined;
 
   if (!files) return [];
-
   if (Array.isArray(files)) return files;
-
   return Object.values(files).flat();
 };
 
@@ -128,7 +126,6 @@ const extractVariantImages = (req: Request): Record<number, string[]> => {
 
     const idx = Number(match[1]);
     if (!result[idx]) result[idx] = [];
-
     result[idx].push(`/uploads/${file.filename}`);
   });
 
@@ -136,7 +133,7 @@ const extractVariantImages = (req: Request): Record<number, string[]> => {
 };
 
 /**
- * ✅ NEW: Extract color images grouped by color index.
+ * Extract color images grouped by color index.
  * fieldname: colorImages[0], colorImages[1]...
  */
 const extractColorImages = (req: Request): Record<number, string[]> => {
@@ -149,7 +146,6 @@ const extractColorImages = (req: Request): Record<number, string[]> => {
 
     const idx = Number(match[1]);
     if (!result[idx]) result[idx] = [];
-
     result[idx].push(`/uploads/${file.filename}`);
   });
 
@@ -157,8 +153,7 @@ const extractColorImages = (req: Request): Record<number, string[]> => {
 };
 
 /**
- * Build variants array with proper numeric fields + images merged in
- * If existingVariants passed, preserve old images when body doesn't send images and no uploads came.
+ * Build variants array with numeric fields + images merged in
  */
 const buildVariants = (
   rawVariants: any,
@@ -175,15 +170,11 @@ const buildVariants = (
 
     const existingImages = Array.isArray(existing?.images) ? existing.images : [];
 
-    // ✅ IMPORTANT:
-    // - If "images" field exists in payload -> overwrite (even empty [] means remove all)
-    // - Else preserve existing
     const hasImagesKey = v && Object.prototype.hasOwnProperty.call(v, "images");
     const incomingImages = Array.isArray(v?.images) ? v.images : [];
 
     const baseImages = hasImagesKey ? incomingImages : existingImages;
 
-    // ✅ Append newly uploaded images (if any)
     const uploaded = variantImagesMap[idx] || [];
     const finalImages = [...baseImages, ...uploaded];
 
@@ -192,13 +183,10 @@ const buildVariants = (
       label: v.label,
       weight: v.weight,
       size: v.size,
-
-      // remove color from variants if you want (optional but recommended)
-      // color: undefined,
-
       comboText: v.comboText,
 
-      quantity: typeof v.quantity === "number" ? v.quantity : Number(v.quantity || 0),
+      quantity:
+        typeof v.quantity === "number" ? v.quantity : Number(v.quantity || 0),
       mrp: typeof v.mrp === "number" ? v.mrp : Number(v.mrp || 0),
       salePrice:
         typeof v.salePrice === "number" ? v.salePrice : Number(v.salePrice || 0),
@@ -208,11 +196,8 @@ const buildVariants = (
   });
 };
 
-
 /**
- * ✅ NEW: Build colors array with images merged in
- * - colors live at product level
- * - preserve existing color images if no new images provided
+ * Build colors array with images merged in
  */
 const buildColors = (
   rawColors: any,
@@ -234,9 +219,6 @@ const buildColors = (
 
       const existingImages = Array.isArray(existing?.images) ? existing.images : [];
 
-      // ✅ NEW RULE:
-      // If body includes "images" field (even empty) OR there are uploads -> use incoming+uploads.
-      // Else preserve existing images.
       const mergedImages =
         hasImagesField || uploadedImages.length > 0
           ? [...incomingImages, ...uploadedImages]
@@ -256,7 +238,6 @@ const buildColors = (
     .filter((x) => x.name);
 };
 
-
 /**
  * Stock calculation:
  * - if variants exist: sum of variant.quantity
@@ -274,35 +255,12 @@ const calcLowStockFlag = (totalStock: number, threshold: number) => {
   return totalStock <= Number(threshold || 0);
 };
 
-/**
- * Generate next productId in format: MECH000001, MECH000002, ...
- */
-const generateNextProductId = async (): Promise<string> => {
-  const prefix = "MECH";
+// -------------------- CONTROLLERS --------------------
 
-  const lastProduct = await Product.findOne({})
-    .sort({ createdAt: -1 })
-    .select("productId")
-    .lean();
-
-  let nextNumber = 1;
-
-  if (lastProduct?.productId) {
-    const current = parseInt(lastProduct.productId.replace(prefix, ""), 10);
-    if (!Number.isNaN(current)) nextNumber = current + 1;
-  }
-
-  const padded = String(nextNumber).padStart(6, "0");
-  return `${prefix}${padded}`;
-};
-
-export const createProduct = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
+      productId, // ✅ manual SKU
       title,
       description,
       features,
@@ -311,7 +269,7 @@ export const createProduct = async (
       mrp,
       salePrice,
       variants,
-      colors, // ✅ NEW
+      colors,
       baseStock,
       lowStockThreshold,
       categoryId,
@@ -321,10 +279,23 @@ export const createProduct = async (
     const baseMrp = toNumber(mrp);
     const baseSale = toNumber(salePrice);
 
-    if (!title || baseMrp === null || baseSale === null || !categoryId) {
+    const sku = String(productId || "").trim();
+
+    if (!sku || !title || baseMrp === null || baseSale === null || !categoryId) {
       return res.status(400).json({
-        message: "title, mrp, salePrice and categoryId are required",
+        message: "productId(SKU), title, mrp, salePrice and categoryId are required",
       });
+    }
+
+    // SKU format (optional): A-Z a-z 0-9 _ -
+    if (!/^[A-Za-z0-9_-]+$/.test(sku)) {
+      return res.status(400).json({ message: "Invalid productId(SKU) format" });
+    }
+
+    // SKU unique
+    const skuExists = await Product.findOne({ productId: sku }).select("_id").lean();
+    if (skuExists) {
+      return res.status(409).json({ message: "ProductId(SKU) already exists" });
     }
 
     if (!Types.ObjectId.isValid(categoryId)) {
@@ -349,33 +320,25 @@ export const createProduct = async (
       subCatId = subCat._id;
     }
 
+    // ✅ slug always computed from FULL title on backend
     const slug = makeSlug(title);
 
-    const existing = await Product.findOne({ slug });
-    if (existing) {
-      return res
-        .status(409)
-        .json({ message: "Product with same slug/title already exists" });
+    const existingSlug = await Product.findOne({ slug }).select("_id").lean();
+    if (existingSlug) {
+      return res.status(409).json({ message: "Product with same slug/title already exists" });
     }
 
     const createdBy = (req as any).admin?._id || null;
 
-    const productId = await generateNextProductId();
-
     // images from multer
     const { featureImagePath, galleryPaths } = extractImagePaths(req);
     const variantImagesMap = extractVariantImages(req);
-
-    // ✅ NEW: color images map
     const colorImagesMap = extractColorImages(req);
 
     const bodyGallery = normalizeGalleryFromBody(galleryImages);
     const finalGallery = [...bodyGallery, ...galleryPaths];
 
-    // build variants
     const builtVariants = buildVariants(variants, variantImagesMap);
-
-    // ✅ NEW: build colors
     const builtColors = buildColors(colors, colorImagesMap);
 
     const parsedBaseStock = toNumber(baseStock) ?? 0;
@@ -385,7 +348,7 @@ export const createProduct = async (
     const isLowStock = calcLowStockFlag(totalStock, parsedThreshold);
 
     const product = await Product.create({
-      productId,
+      productId: sku,
 
       title,
       slug,
@@ -394,7 +357,6 @@ export const createProduct = async (
       featureImage: featureImagePath || featureImage,
       galleryImages: finalGallery,
 
-      // ✅ NEW
       colors: builtColors,
 
       mrp: baseMrp,
@@ -421,11 +383,7 @@ export const createProduct = async (
   }
 };
 
-export const getProductBySlug = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const getProductBySlug = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { slug } = req.params;
 
@@ -434,24 +392,15 @@ export const getProductBySlug = async (
       .populate("subCategory", "name slug")
       .sort({ createdAt: -1 });
 
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
+    if (!product) return res.status(404).json({ message: "Product not found" });
 
-    return res.status(200).json({
-      message: "Product fetched successfully",
-      data: product,
-    });
+    return res.status(200).json({ message: "Product fetched successfully", data: product });
   } catch (err) {
     next(err);
   }
 };
 
-export const getAllProducts = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const getAllProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
       categoryId,
@@ -465,37 +414,18 @@ export const getAllProducts = async (
 
     const filter: any = {};
 
-    if (categoryId && Types.ObjectId.isValid(String(categoryId))) {
-      filter.category = categoryId;
-    }
-
-    if (subCategoryId && Types.ObjectId.isValid(String(subCategoryId))) {
-      filter.subCategory = subCategoryId;
-    }
+    if (categoryId && Types.ObjectId.isValid(String(categoryId))) filter.category = categoryId;
+    if (subCategoryId && Types.ObjectId.isValid(String(subCategoryId))) filter.subCategory = subCategoryId;
 
     if (!filter.category && categorySlug) {
-      const cat = await Category.findOne({ slug: String(categorySlug) }).select(
-        "_id"
-      );
+      const cat = await Category.findOne({ slug: String(categorySlug) }).select("_id");
       if (cat) filter.category = cat._id;
-      else {
-        return res.status(200).json({
-          message: "Products fetched successfully",
-          data: [],
-        });
-      }
+      else return res.status(200).json({ message: "Products fetched successfully", data: [] });
     }
 
     if (!filter.subCategory && parentSlug && subSlug) {
-      const parent = await Category.findOne({ slug: String(parentSlug) }).select(
-        "_id"
-      );
-      if (!parent) {
-        return res.status(200).json({
-          message: "Products fetched successfully",
-          data: [],
-        });
-      }
+      const parent = await Category.findOne({ slug: String(parentSlug) }).select("_id");
+      if (!parent) return res.status(200).json({ message: "Products fetched successfully", data: [] });
 
       const sub = await Category.findOne({
         slug: String(subSlug),
@@ -503,41 +433,24 @@ export const getAllProducts = async (
       }).select("_id");
 
       if (sub) filter.subCategory = sub._id;
-      else {
-        return res.status(200).json({
-          message: "Products fetched successfully",
-          data: [],
-        });
-      }
+      else return res.status(200).json({ message: "Products fetched successfully", data: [] });
     }
 
-    if (typeof active !== "undefined") {
-      filter.isActive = String(active) === "true";
-    }
-
-    if (typeof lowStock !== "undefined") {
-      filter.isLowStock = String(lowStock) === "true";
-    }
+    if (typeof active !== "undefined") filter.isActive = String(active) === "true";
+    if (typeof lowStock !== "undefined") filter.isLowStock = String(lowStock) === "true";
 
     const products = await Product.find(filter)
       .populate("category", "name slug")
       .populate("subCategory", "name slug")
       .sort({ createdAt: -1 });
 
-    return res.status(200).json({
-      message: "Products fetched successfully",
-      data: products,
-    });
+    return res.status(200).json({ message: "Products fetched successfully", data: products });
   } catch (err) {
     next(err);
   }
 };
 
-export const getProductById = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const getProductById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
@@ -545,37 +458,27 @@ export const getProductById = async (
       .populate("category", "name slug")
       .populate("subCategory", "name slug");
 
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
+    if (!product) return res.status(404).json({ message: "Product not found" });
 
-    return res.status(200).json({
-      message: "Product fetched successfully",
-      data: product,
-    });
+    return res.status(200).json({ message: "Product fetched successfully", data: product });
   } catch (err) {
     next(err);
   }
 };
 
-export const updateProduct = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const updateProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
     const product = await Product.findById(id);
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
+    if (!product) return res.status(404).json({ message: "Product not found" });
 
     const {
+      // ❌ productId intentionally ignored (SKU change not allowed)
       title,
       description,
       features,
-      featureImage, // (string path from body - optional)
+      featureImage,
       galleryImages,
       mrp,
       salePrice,
@@ -586,40 +489,28 @@ export const updateProduct = async (
       categoryId,
       subCategoryId,
       isActive,
-      removeFeatureImage, // ✅ from frontend: "true"
+      removeFeatureImage,
     } = req.body as any;
 
     // -------- BASIC FIELDS --------
     if (title) {
       product.title = title;
-      product.slug = makeSlug(title);
+      product.slug = makeSlug(title); // ✅ always backend-generated slug
     }
     if (typeof description !== "undefined") product.description = description;
-    if (typeof features !== "undefined") {
-      product.features = typeof features === "string" ? features : "";
-    }
+    if (typeof features !== "undefined") product.features = typeof features === "string" ? features : "";
 
     // -------- IMAGES (MULTER) --------
     const { featureImagePath, galleryPaths } = extractImagePaths(req);
     const variantImagesMap = extractVariantImages(req);
     const colorImagesMap = extractColorImages(req);
 
-    // ✅ FEATURE IMAGE: allow remove + replace + preserve
     const removeFeature = removeFeatureImage === "true" || removeFeatureImage === true;
+    if (removeFeature) product.featureImage = "";
 
-    if (removeFeature) {
-      product.featureImage = "";
-    }
+    if (featureImagePath) product.featureImage = featureImagePath;
+    else if (typeof featureImage !== "undefined" && !removeFeature) product.featureImage = featureImage;
 
-    // if new file uploaded, it should win
-    if (featureImagePath) {
-      product.featureImage = featureImagePath;
-    } else if (typeof featureImage !== "undefined" && !removeFeature) {
-      // if body sends a path and not removing
-      product.featureImage = featureImage;
-    }
-
-    // ✅ GALLERY
     if (typeof galleryImages !== "undefined" || galleryPaths.length > 0) {
       const bodyGallery = normalizeGalleryFromBody(galleryImages);
       product.galleryImages = [...bodyGallery, ...galleryPaths];
@@ -632,67 +523,38 @@ export const updateProduct = async (
     const baseSale = toNumber(salePrice);
     if (baseSale !== null) product.salePrice = baseSale;
 
-    // -------- VARIANTS + STOCK AUTO --------
+    // -------- VARIANTS --------
     let updatedVariants: any[] = product.variants as any[];
 
     if (typeof variants !== "undefined") {
-      updatedVariants = buildVariants(
-        variants,
-        variantImagesMap,
-        product.variants as any[]
-      );
+      updatedVariants = buildVariants(variants, variantImagesMap, product.variants as any[]);
       product.variants = updatedVariants as any;
     } else if (Object.keys(variantImagesMap).length > 0) {
-      // edge: only images uploaded but variants body not provided
-      updatedVariants = buildVariants(
-        product.variants as any[],
-        variantImagesMap,
-        product.variants as any[]
-      );
+      updatedVariants = buildVariants(product.variants as any[], variantImagesMap, product.variants as any[]);
       product.variants = updatedVariants as any;
     }
 
-    // -------- COLORS (PRODUCT LEVEL) --------
+    // -------- COLORS --------
     if (typeof colors !== "undefined") {
-      const updatedColors = buildColors(
-        colors,
-        colorImagesMap,
-        (product as any).colors || []
-      );
+      const updatedColors = buildColors(colors, colorImagesMap, (product as any).colors || []);
       (product as any).colors = updatedColors as any;
     } else if (Object.keys(colorImagesMap).length > 0) {
-      const updatedColors = buildColors(
-        (product as any).colors || [],
-        colorImagesMap,
-        (product as any).colors || []
-      );
+      const updatedColors = buildColors((product as any).colors || [], colorImagesMap, (product as any).colors || []);
       (product as any).colors = updatedColors as any;
     }
 
     // -------- THRESHOLD + BASE STOCK --------
     const thresholdNum = toNumber(lowStockThreshold);
-    if (thresholdNum !== null) {
-      product.lowStockThreshold = thresholdNum;
-    }
+    if (thresholdNum !== null) product.lowStockThreshold = thresholdNum;
 
     const baseStockNum = toNumber(baseStock);
-    if (
-      baseStockNum !== null &&
-      (!updatedVariants || updatedVariants.length === 0)
-    ) {
+    if (baseStockNum !== null && (!updatedVariants || updatedVariants.length === 0)) {
       product.baseStock = baseStockNum;
     }
 
-    // if variants exist, baseStock should be 0
-    if (updatedVariants && updatedVariants.length > 0) {
-      product.baseStock = 0;
-    }
+    if (updatedVariants && updatedVariants.length > 0) product.baseStock = 0;
 
-    // recalc stock + lowStock
-    const finalTotalStock = calcTotalStock(
-      updatedVariants || [],
-      product.baseStock || 0
-    );
+    const finalTotalStock = calcTotalStock(updatedVariants || [], product.baseStock || 0);
     product.totalStock = finalTotalStock;
 
     const finalThreshold = product.lowStockThreshold ?? 5;
@@ -705,58 +567,38 @@ export const updateProduct = async (
 
     // -------- CATEGORY / SUBCATEGORY --------
     if (categoryId) {
-      if (!Types.ObjectId.isValid(categoryId)) {
-        return res.status(400).json({ message: "Invalid category id" });
-      }
+      if (!Types.ObjectId.isValid(categoryId)) return res.status(400).json({ message: "Invalid category id" });
       const cat = await Category.findById(categoryId);
-      if (!cat) {
-        return res.status(404).json({ message: "Category not found" });
-      }
+      if (!cat) return res.status(404).json({ message: "Category not found" });
       product.category = cat._id;
     }
 
     if (typeof subCategoryId !== "undefined") {
-      if (!subCategoryId) {
-        product.subCategory = null;
-      } else {
-        if (!Types.ObjectId.isValid(subCategoryId)) {
-          return res.status(400).json({ message: "Invalid sub category id" });
-        }
+      if (!subCategoryId) product.subCategory = null;
+      else {
+        if (!Types.ObjectId.isValid(subCategoryId)) return res.status(400).json({ message: "Invalid sub category id" });
         const sub = await Category.findById(subCategoryId);
-        if (!sub) {
-          return res.status(404).json({ message: "Sub category not found" });
-        }
+        if (!sub) return res.status(404).json({ message: "Sub category not found" });
         product.subCategory = sub._id;
       }
     }
 
     await product.save();
 
-    return res.status(200).json({
-      message: "Product updated successfully",
-      data: product,
-    });
+    return res.status(200).json({ message: "Product updated successfully", data: product });
   } catch (err) {
     next(err);
   }
 };
 
-
-export const deleteProduct = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const deleteProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
     const product = await Product.findById(id);
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
+    if (!product) return res.status(404).json({ message: "Product not found" });
 
     await product.deleteOne();
-
     return res.status(200).json({ message: "Product deleted successfully" });
   } catch (err) {
     next(err);

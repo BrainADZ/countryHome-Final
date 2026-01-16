@@ -17,6 +17,7 @@ export default function Sidemenu() {
     { label: "Category", icon: Layers, href: "/admin/categories" },
     { label: "Banner", icon: Layers, href: "/admin/banner" },
     { label: "Order", icon: Layers, href: "/admin/order" },
+    { label: "Offer", icon: Layers, href: "/admin/offer" },
 
     
   ];

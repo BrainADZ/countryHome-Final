@@ -11,7 +11,7 @@ import {
   setDefaultAddress,
 } from "../controllers/user/address.controller";
 import { createCodOrder, downloadInvoicePdf, getMyOrders, getOrderById } from "../controllers/user/order.controller";
-import { getCheckoutSummary } from "../controllers/user/checkout.controller";
+import { getCheckoutSummary, offerPreview } from "../controllers/user/checkout.controller";
 
 
 const router = Router();
@@ -34,6 +34,7 @@ router.patch("/addresses/:addressId/default", verifyUser, setDefaultAddress);
 router.delete("/addresses/:addressId", verifyUser, deleteAddress);
 // Check OUt Summary 
 router.get("/checkout/summary", verifyUser, getCheckoutSummary);
+router.post("/checkout/offer-preview", verifyUser, offerPreview);
 // order
 router.post("/orders", verifyUser, createCodOrder);    
 router.get("/orders", verifyUser, getMyOrders);
