@@ -29,6 +29,7 @@ import {
   toggleOffer,
   listOffers,
 } from "../controllers/admin/offer.admin.controller";
+import { getHomeDealsAdmin, updateHomeDealsAdmin } from "../controllers/admin/homeDeals.controller.js";
 
 const router = Router();
 
@@ -73,5 +74,7 @@ router.post("/discount/offers",verifyAdmin, createOffer);
 router.patch("/discount/offers/:id",verifyAdmin, updateOffer);
 router.patch("/discount/offers/:id/toggle",verifyAdmin, toggleOffer);
 router.get("/discount/offers",verifyAdmin, listOffers);
-
+// DEAL HOME SECTION
+router.get("/home-deals", getHomeDealsAdmin);
+router.put("/home-deals", updateHomeDealsAdmin);
 export default router;

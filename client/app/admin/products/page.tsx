@@ -109,6 +109,7 @@ export default function AdminProductsListPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+const [editProductId, setEditProductId] = useState(""); // ✅ SKU/ProductId
 
   const [search, setSearch] = useState("");
 
@@ -284,6 +285,7 @@ const [editVariantRemovedImages, setEditVariantRemovedImages] = useState<Record<
     setEditingProduct(product);
     setEditTitle(product.title);
     setEditDescription(product.description || "");
+    setEditProductId(product.productId || "");
     setEditFeatures(product.features || ""); // ✅ NEW
     setEditMrp(product.mrp.toString());
     setEditSalePrice(product.salePrice.toString());
@@ -353,6 +355,7 @@ setEditVariantRemovedImages({});
     if (savingEdit) return;
     setEditingProduct(null);
     setEditError(null);
+    setEditProductId("");
     setEditGalleryNewFiles([]);
     setEditGalleryNewPreviews([]);
     setEditColors([]);
@@ -581,7 +584,11 @@ const removeNewVariantImage = (variantIndex: number, fileIndex: number) => {
         setSavingEdit(false);
         return;
       }
-
+if (!editProductId.trim()) {
+  setEditError("SKU / Product ID is required");
+  setSavingEdit(false);
+  return;
+}
       // 1️⃣ CLEAN VARIANTS
 const cleanVariants = editVariants
   .filter(
@@ -641,7 +648,9 @@ const cleanVariants = editVariants
       // 4️⃣ FORM DATA
       const formData = new FormData();
       formData.append("title", editTitle);
+      formData.append("productId", editProductId.trim()); // ✅ IMPORTANT
       formData.append("description", editDescription);
+
       formData.append("features", editFeatures); // ✅ NEW
       formData.append("mrp", editMrp);
       formData.append("salePrice", editSalePrice);
@@ -1114,7 +1123,8 @@ formData.append("removedVariantImages", JSON.stringify(removedVariantImagesPaylo
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-slate-900">Edit Product</h3>
                   <p className="text-xs text-slate-500 mt-0.5 break-all">
-                    ID: {editingProduct.productId} | Mongo: {editingProduct._id}
+                  ID: {editProductId || editingProduct.productId} | Mongo: {editingProduct._id}
+
                   </p>
                 </div>
 
@@ -1161,6 +1171,22 @@ formData.append("removedVariantImages", JSON.stringify(removedVariantImagesPaylo
                     className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 bg-white"
                   />
                 </div>
+{/* SKU / Product ID */}
+<div className="space-y-1.5">
+  <label className="text-xs font-medium text-slate-700">
+    SKU / Product ID
+  </label>
+  <input
+    type="text"
+    value={editProductId}
+    onChange={(e) => setEditProductId(e.target.value)}
+    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 bg-white"
+    placeholder="e.g. SKU-RED-001"
+  />
+  <p className="text-[11px] text-slate-500">
+    Unique SKU. Same value list/table me Product ID ke naam se show hogi.
+  </p>
+</div>
 
                 {/* Description */}
                 <div className="space-y-1.5">

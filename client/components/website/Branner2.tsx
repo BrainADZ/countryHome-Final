@@ -8,8 +8,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 type Banner = {
   key?: string;
-  image?: string;   // "/uploads/..."
-  ctaUrl?: string;  // "/website/..." or full URL
+  image?: string;
+  ctaUrl?: string;
   isActive?: boolean;
 };
 
@@ -23,8 +23,8 @@ const resolveImageUrl = (path?: string) => {
 
 export default function HeroSectionBanner2() {
   const [banner, setBanner] = useState<Banner | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ Banner 2 key
   const endpoint = useMemo(
     () => `${API_BASE}/common/home-hero-secondary`,
     []
@@ -39,32 +39,37 @@ export default function HeroSectionBanner2() {
         const data = await res.json();
 
         const b: Banner | null = data?.banner || null;
-        if (b?.isActive === false) {
+
+        // ❌ inactive OR no image → no banner
+        if (!b || b.isActive === false || !b.image) {
           setBanner(null);
-          return;
+        } else {
+          setBanner(b);
         }
-        setBanner(b);
       } catch {
         setBanner(null);
+      } finally {
+        setLoading(false);
       }
     };
 
     run();
   }, [endpoint]);
 
-  // ✅ fallback (so home page never looks empty)
-  const bgSrc = banner?.image ? resolveImageUrl(banner.image) : "/hero.webp";
-  const href = banner?.ctaUrl?.trim() ? banner.ctaUrl.trim() : "/website/products";
+  // ⛔ Nothing should render if no banner
+  if (loading || !banner || !banner.image) return null;
+
+  const bgSrc = resolveImageUrl(banner.image);
+  const href = banner.ctaUrl?.trim() || "/products";
 
   return (
-    <section className="relative w-full overflow-hidden Z-0">
-      {/* ✅ Whole banner clickable (no button) */}
+    <section className="relative w-full overflow-hidden z-0">
       <Link href={href} className="block w-full">
-        <div className="relative h-[150px] md:h-[470px] w-full z-0">
+        <div className="relative h-[150px] md:h-[470px] w-full">
           <img
             src={bgSrc}
             alt="Shopping Banner"
-            className="w-full h-full object-cover object-center opacity-95"
+            className="w-full h-full object-cover object-center"
           />
         </div>
       </Link>

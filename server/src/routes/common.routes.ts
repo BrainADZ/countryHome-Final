@@ -11,6 +11,7 @@ import {
   setCartSelectAll,
 } from "../controllers/common/cart.controller";
 import { authOptional } from "../middleware/authOptional";
+import { getHomeDealsPublic } from "../controllers/admin/homeDeals.controller";
 
 const router = Router();
 
@@ -27,11 +28,14 @@ router.delete("/cart/clear",authOptional, clearCart);
 router.patch("/cart/item/select",authOptional, setCartItemSelected);
 router.patch("/cart/select-all",authOptional, setCartSelectAll);
 
+// home page routes
+router.get("/home-deals", getHomeDealsPublic);
 
 /**
  * BANNERS (KEEP THIS LAST)
  * GET /api/common/:key
  */
 router.get("/:key", getBannerByKey);
+
 
 export default router;
