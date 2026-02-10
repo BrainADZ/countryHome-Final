@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
@@ -606,7 +607,7 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
 
     return `${name}${priceText ? ` • ${priceText}` : ""} • ${statusText}`;
   };
-  const WHATSAPP_NUMBER = "917542003073"; // ✅ apna number
+  const WHATSAPP_NUMBER = "919879511957";
   const WA_MESSAGE = `Hi, I'm interested in: ${product.title} ${product.productId} ). Please share more details.`;
 
   const openWhatsApp = () => {

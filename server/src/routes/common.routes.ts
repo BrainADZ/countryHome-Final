@@ -12,6 +12,7 @@ import {
 } from "../controllers/common/cart.controller";
 import { authOptional } from "../middleware/authOptional";
 import { getHomeDealsPublic } from "../controllers/admin/homeDeals.controller";
+import { publicBrands } from "../controllers/admin/brand.controller";
 
 const router = Router();
 
@@ -30,7 +31,12 @@ router.patch("/cart/select-all",authOptional, setCartSelectAll);
 
 // home page routes
 router.get("/home-deals", getHomeDealsPublic);
-
+/**
+ * PUBLIC BRANDS
+ * Base: /api/brands
+ * Returns only active brands (sorted)
+ */
+router.get("/brands/", publicBrands);
 /**
  * BANNERS (KEEP THIS LAST)
  * GET /api/common/:key

@@ -62,3 +62,4 @@ export const uploadGalleryImages = upload.array("galleryImages", 10);
  */
 export const uploadProductImages = upload.any();
 export const uploadCategoryImage = upload.single("image");
+export const uploadBrandsImage = upload.single("image");

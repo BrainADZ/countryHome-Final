@@ -19,7 +19,7 @@ import {
   deleteProduct,
   getProductBySlug,
 } from "../controllers/admin/product.controller";
-import { uploadProductImages, uploadCategoryImage } from "../middleware/upload.middleware.js";
+import { uploadProductImages, uploadCategoryImage, uploadBrandsImage } from "../middleware/upload.middleware.js";
 import { upsertBannerByKey} from "../controllers/admin/banner.admin.controller.js";
 import { adminGetUsers } from "../controllers/user/auth.controller.js";
 import { adminGetOrders, adminUpdateOrderStatus } from "../controllers/admin/order.controller.js";
@@ -30,6 +30,7 @@ import {
   listOffers,
 } from "../controllers/admin/offer.admin.controller";
 import { getHomeDealsAdmin, updateHomeDealsAdmin } from "../controllers/admin/homeDeals.controller.js";
+import { adminListBrands, createBrand, deleteBrand, toggleBrand, updateBrand } from "../controllers/admin/brand.controller.js";
 
 const router = Router();
 
@@ -57,7 +58,20 @@ router.get("/products/:id", getProductById);
 router.put("/products/:id", verifyAdmin,uploadProductImages, updateProduct);
 router.get("/products/slug/:slug", getProductBySlug);
 router.delete("/products/:id", verifyAdmin, deleteProduct);
+// Create (image required)
+router.post("/brands/", verifyAdmin, uploadBrandsImage, createBrand);
 
+// List all brands
+router.get("/brands/", verifyAdmin, adminListBrands);
+
+// Update (image optional)
+router.put("/brands/:id", verifyAdmin, uploadBrandsImage, updateBrand);
+
+// Toggle active
+router.patch("/brands/:id/toggle", verifyAdmin, toggleBrand);
+
+// Delete
+router.delete("/brands/:id", verifyAdmin, deleteBrand);
 // ---------- PRODUCTS ROUTES ----------
 router.post("/:key", verifyAdmin, uploadCategoryImage, upsertBannerByKey);
 // ---------- USERS ROUTES ----------
@@ -77,4 +91,6 @@ router.get("/discount/offers",verifyAdmin, listOffers);
 // DEAL HOME SECTION
 router.get("/home-deals", getHomeDealsAdmin);
 router.put("/home-deals", updateHomeDealsAdmin);
+
+
 export default router;

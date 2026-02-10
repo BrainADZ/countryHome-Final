@@ -19,6 +19,7 @@ export default function Sidemenu() {
     { label: "Order", icon: Layers, href: "/admin/order" },
     { label: "Offer", icon: Layers, href: "/admin/offer" },
     { label: "Home Page", icon: Layers, href: "/admin/homepage" },
+    { label: "Brands", icon: Layers, href: "/admin/brands" },
 
     
   ];

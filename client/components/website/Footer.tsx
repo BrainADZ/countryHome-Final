@@ -58,7 +58,7 @@ export default function Footer() {
             <li><Link href="/consumer-policies/t&c" className="hover:underline font-medium text-white">Terms Of Use</Link></li>
             <li><Link href="/consumer-policies/security" className="hover:underline font-medium text-white">Security</Link></li>
             <li><Link href="/consumer-policies/privacy" className="hover:underline font-medium text-white">Privacy</Link></li>
-                        <li><Link href="/consumer-policie/return&refund" className="hover:underline font-medium text-white">Returns & Refund</Link></li>
+            <li><Link href="/consumer-policie/return&refund" className="hover:underline font-medium text-white">Returns & Refund</Link></li>
             <li><Link href="#" className="hover:underline font-medium text-white">Sitemap</Link></li>
           </ul>
         </div>
@@ -76,7 +76,7 @@ export default function Footer() {
 
           <div className="mt-4">
             {/* <h4 className="text-gray-400 text-[13px] font-semibold mb-2">Warehouse:</h4> */}
-            
+
           </div>
           <div className="mt-4">
             <h4 className="text-gray-400 text-[13px] font-semibold mb-2">Social:</h4>
@@ -84,7 +84,7 @@ export default function Footer() {
               <Link href="#" aria-label="Facebook" className="hover:text-white"><Facebook size={18} /></Link>
               <Link href="#" aria-label="X" className="hover:text-white"><Twitter size={18} /></Link>
               <Link href="#" aria-label="YouTube" className="hover:text-white"><Youtube size={18} /></Link>
-              <Link href="#" aria-label="Instagram" className="hover:text-white"><Instagram size={18} /></Link>
+              <Link href="https://www.instagram.com/countryhomeofficial_/?igsh=MWxxZmh1cjUxMXN1NA%3D%3D#" aria-label="Instagram" className="hover:text-white"><Instagram size={18} /></Link>
             </div>
           </div>
 
@@ -97,25 +97,17 @@ export default function Footer() {
           </h3>
           <p className="text-gray-300 leading-relaxed text-[13px]">
             Country Home Private Limited,
-            <br /> Pankaj Palace Shop No.7
-            <br />  Near City Palace Mall Burhanpur
-            <br /> Madhya Pradesh, 450331, India
-            <br />
-            CIN: U51109KA2024PTC099999
+            <br /> Tc krupa fabrics 59,Vivekananand garment park,
+            <br />Opp Jayesh  Textile Mills, Shahwadi,
+            <br /> Narol, AHMEDABAD
+            <br />GST: 24AHTPA9123A1ZQ
             <br />
             Telephone:{" "}
             <Link
-              href="#"
+              href="tel:919879511957"
               className="text-[#0077B6] hover:underline"
             >
-              080-45120000
-            </Link>{" "}
-            /{" "}
-            <Link
-              href="#"
-              className="text-[#0077B6] hover:underline"
-            >
-              080-67418000
+              +91 98795 11957
             </Link>
           </p>
         </div>

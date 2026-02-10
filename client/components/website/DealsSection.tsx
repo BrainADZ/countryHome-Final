@@ -272,38 +272,36 @@ export default function DealsSection() {
                         </div>
                       );
                     }
-
                     return (
-<Link
-  key={i}
-  href={p.href}
-  className="rounded-xl border border-[#e4eff2] bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group block overflow-hidden"
->
-  <div className="relative w-full h-48 bg-[#f7fbfd] flex items-center justify-center p-3">
-    <img
-      src={p.img}
-      alt={p.name}
-      className="max-h-full max-w-full object-contain group-hover:scale-[1.03] transition-transform duration-300"
-    />
+                      <Link
+                        key={i}
+                        href={p.href}
+                        className="rounded-xl border border-[#e4eff2] bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group block overflow-hidden"
+                      >
+                        <div className="relative w-full h-48 bg-[#f7fbfd] flex items-center justify-center p-3">
+                          <img
+                            src={p.img}
+                            alt={p.name}
+                            className="max-h-full max-w-full object-contain group-hover:scale-[1.03] transition-transform duration-300"
+                          />
 
-    {/* subtle fade */}
-    <div className="absolute inset-x-0 bottom-0 h-14 bg-linear-to-t from-white/95 to-transparent" />
-  </div>
+                          {/* subtle fade */}
+                          <div className="absolute inset-x-0 bottom-0 h-14 bg-linear-to-t from-white/95 to-transparent" />
+                        </div>
 
-  <div className="px-3 py-3 text-center">
-    <p className="text-[15px] font-semibold text-[#002B5B] truncate">
-      {p.name}
-    </p>
+                        <div className="px-3 py-3 text-center">
+                          <p className="text-[15px] font-semibold text-[#002B5B] truncate">
+                            {p.name}
+                          </p>
 
-    <p
-      className={`mt-1 text-[13px] font-bold ${
-        p.offerType === "new" ? "text-[#00B4D8]" : "text-green-600"
-      }`}
-    >
-      {p.offer}
-    </p>
-  </div>
-</Link>
+                          <p
+                            className={`mt-1 text-[13px] font-bold ${p.offerType === "new" ? "text-[#00B4D8]" : "text-green-600"
+                              }`}
+                          >
+                            {p.offer}
+                          </p>
+                        </div>
+                      </Link>
 
                     );
                   }

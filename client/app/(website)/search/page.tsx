@@ -8,7 +8,9 @@ import ProductCard, { type ProductCardProduct } from "@/components/website/Produ
 
 export const dynamic = "force-dynamic";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+// ✅ normalize API base (ensure /api like your other pages)
+const RAW_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+const API_BASE = RAW_BASE.endsWith("/api") ? RAW_BASE : `${RAW_BASE}/api`;
 
 function norm(v: any) {
   return String(v ?? "").trim();
@@ -23,48 +25,76 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       try {
         setLoading(true);
         setError(null);
 
         if (!q) {
-          setItems([]);
+          if (!cancelled) setItems([]);
           return;
         }
 
-        const res = await fetch(
-          `${API_BASE}/common/products/search?q=${encodeURIComponent(q)}&page=1&limit=24`,
-          { credentials: "include", cache: "no-store" }
-        );
+        if (!API_BASE) {
+          throw new Error("NEXT_PUBLIC_API_URL is not set");
+        }
+
+        const url = `${API_BASE}/common/products/search?q=${encodeURIComponent(
+          q
+        )}&page=1&limit=24`;
+
+        const res = await fetch(url, {
+          cache: "no-store",
+          // ✅ remove credentials unless your API strictly needs cookies
+          // credentials: "include",
+        });
 
         const json = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(json?.message || "Search failed");
 
         const data = json?.data ?? json;
-        const list = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
+        const list = Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data)
+          ? data
+          : [];
 
-        // map to ProductCardProduct shape (fallback safe)
         const mapped: ProductCardProduct[] = list.map((p: any) => ({
-          _id: String(p?._id),
+          _id: String(p?._id || ""),
           title: String(p?.title || ""),
           slug: String(p?.slug || ""),
           featureImage: p?.featureImage,
           mrp: Number(p?.mrp || 0),
           salePrice: Number(p?.salePrice || 0),
-          totalStock: typeof p?.totalStock === "number" ? p.totalStock : (typeof p?.baseStock === "number" ? p.baseStock : undefined),
-          inStock: p?.inStock,
+          totalStock:
+            typeof p?.totalStock === "number"
+              ? p.totalStock
+              : typeof p?.baseStock === "number"
+              ? p.baseStock
+              : undefined,
+          inStock:
+            typeof p?.inStock === "boolean"
+              ? p.inStock
+              : (typeof p?.totalStock === "number" ? p.totalStock : (p?.baseStock ?? 0)) > 0,
           variants: Array.isArray(p?.variants) ? p.variants : [],
         }));
 
-        setItems(mapped.filter((x) => x._id && x.slug));
+        if (!cancelled) setItems(mapped.filter((x) => x._id && x.slug));
       } catch (e: any) {
-        setError(e?.message || "Failed");
-        setItems([]);
+        if (!cancelled) {
+          setError(e?.message || "Failed");
+          setItems([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [q]);
 
   return (
@@ -75,7 +105,8 @@ export default function SearchPage() {
           <p className="text-sm text-gray-600">
             {q ? (
               <>
-                Results for: <span className="font-semibold text-gray-900">{q}</span>
+                Results for:{" "}
+                <span className="font-semibold text-gray-900">{q}</span>
               </>
             ) : (
               "Type something in the search box"
@@ -97,10 +128,10 @@ export default function SearchPage() {
       {loading ? (
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="border border-gray-200 p-4">
-              <div className="aspect-square bg-gray-100 animate-pulse" />
-              <div className="mt-3 h-4 bg-gray-100 animate-pulse" />
-              <div className="mt-2 h-4 w-24 bg-gray-100 animate-pulse" />
+            <div key={i} className="border border-gray-200 p-4 rounded-xl">
+              <div className="aspect-square bg-gray-100 animate-pulse rounded-lg" />
+              <div className="mt-3 h-4 bg-gray-100 animate-pulse rounded" />
+              <div className="mt-2 h-4 w-24 bg-gray-100 animate-pulse rounded" />
             </div>
           ))}
         </div>

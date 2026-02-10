@@ -146,7 +146,7 @@ export default function CartPage() {
       setBusyId(null);
     }
   };
-  const WHATSAPP_NUMBER = "917542003073"; // ✅ apna whatsapp number (countrycode + number, no +, no spaces)
+  const WHATSAPP_NUMBER = "919879511957"; // ✅ apna whatsapp number (countrycode + number, no +, no spaces)
 
   const buildWhatsAppMessage = () => {
     const lines = selectedItems.map((it: any, idx: number) => {

@@ -367,7 +367,6 @@ export function WebsiteHeader() {
     }
     const t = setTimeout(() => fetchSuggest(value), 250);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
   return (
