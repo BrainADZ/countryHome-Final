@@ -1,6 +1,6 @@
 // app/website/category/[parentSlug]/[subSlug]/page.tsx
 import ProductsListingClient from "@/components/website/ProductsListingClient";
-
+import HomeCtaSection from "@/components/ctas";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 type ApiCategory = {
@@ -95,7 +95,9 @@ export default async function SubCategoryPage({
   const products = await fetchProductsBySubCategory(sub._id);
 
   return (
+    <>
     <div className="max-w-[1400px] mx-auto px-4 py-6">
+      
       <div className="flex items-center gap-2 text-sm text-gray-600">
         <a className="hover:underline" href={`/category/${parent.slug}`}>
           {parent.name}
@@ -111,7 +113,12 @@ export default async function SubCategoryPage({
         <p className="mt-5 text-sm text-gray-600">No products found in this sub category.</p>
       ) : (
         <ProductsListingClient products={products} />
+        
       )}
+            <div className="mt-4">
+                    <HomeCtaSection /></div>
     </div>
+    
+    </>
   );
 }

@@ -625,9 +625,9 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
           <div className="w-full min-w-0">
             <div className="bg-white">
               <div className="p-2">
-                <div className="flex flex-col lg:flex-row gap-4 min-w-0">
+                <div className="flex flex-col gap-4 min-w-0">
                   {/* MAIN IMAGE */}
-                  <div className="order-1 lg:order-2 flex-1 min-w-0">
+                  <div className="order-2 w-full flex-1 min-w-0">
                     <div className="bg-white">
                       <div className="aspect-square bg-white border border-gray-200 relative overflow-hidden">
                         {activeImg ? (
@@ -654,59 +654,14 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
                       </div>
                     </div>
 
-                    {/* Buttons */}
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={handleAddToCart}
-                        disabled={isOut || adding}
-                        className={`h-12 font-semibold text-sm border transition w-full
-    ${isOut
-                            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                            : adding
-                              ? "bg-gray-100 text-gray-700 cursor-wait"
-                              : "bg-white text-gray-900 border-gray-300 hover:bg-gray-50"
-                          }`}
-                      >
-                        {adding
-                          ? "ADDING…"
-                          : addedOnce
-                            ? "ADDED ✓"
-                            : "ADD TO CART"}
 
-                      </button>
-
-                      {/* 
-                      <button
-                        type="button"
-                        onClick={handleBuyNow}
-                        disabled={isOut}
-                        className={`h-12 font-semibold text-sm transition w-full cursor-pointer ${isOut ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-orange-600 text-white hover:bg-orange-700"
-                          }`}
-                      >
-                        BUY NOW
-                      </button> */}
-                      <button
-  type="button"
-  onClick={openWhatsApp}
-  disabled={isOut}
-  className={`h-12 font-semibold text-sm transition w-full
-    ${isOut
-      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-      : "bg-green-600 text-white hover:bg-green-700"
-    }`}
->
-  WHATSAPP
-</button>
-
-                    </div>
                   </div>
 
                   {/* THUMBNAILS */}
-                  <div className="order-2 lg:order-1 lg:w-20 w-full lg:shrink-0 min-w-0">
+                  <div className="order-2 lg:w-20 w-full lg:shrink-0 min-w-0">
                     <div
                       className="
-                        flex flex-row lg:flex-col gap-3
+                        flex flex-row  gap-3
                         overflow-x-auto lg:overflow-y-auto
                         overflow-y-hidden lg:overflow-x-hidden
                         pb-1 lg:pb-0
@@ -775,15 +730,13 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
                   </>
                 )}
               </div>
-
               {/* Stock label only */}
               <div className="mt-3">
                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${badge.cls}`}>
                   {badge.text}
                 </span>
               </div>
-
-              {/* ✅ COLOR OPTIONS (product.colors / variants.color) */}
+                            {/* ✅ COLOR OPTIONS (product.colors / variants.color) */}
               {hasColors && (
                 <div className="mt-6">
                   <div className="border border-gray-200 p-4 overflow-hidden">
@@ -893,7 +846,7 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
                   </div>
                 </div>
               )}
-
+              
               {/* Quantity */}
               <div className="mt-6 flex items-center justify-between gap-3">
                 <div className="text-sm font-semibold text-gray-900">Quantity</div>
@@ -921,6 +874,56 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
                   </button>
                 </div>
               </div>
+              {/* Buttons */}
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={isOut || adding}
+                  className={`h-12 font-semibold text-sm border transition w-full
+    ${isOut
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : adding
+                        ? "bg-gray-100 text-gray-700 cursor-wait"
+                        : "bg-white text-gray-900 border-gray-300 hover:bg-gray-50"
+                    }`}
+                >
+                  {adding
+                    ? "ADDING…"
+                    : addedOnce
+                      ? "ADDED ✓"
+                      : "Whislist"}
+
+                </button>
+
+                {/* 
+                      <button
+                        type="button"
+                        onClick={handleBuyNow}
+                        disabled={isOut}
+                        className={`h-12 font-semibold text-sm transition w-full cursor-pointer ${isOut ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-orange-600 text-white hover:bg-orange-700"
+                          }`}
+                      >
+                        BUY NOW
+                      </button> */}
+                <button
+                  type="button"
+                  onClick={openWhatsApp}
+                  disabled={isOut}
+                  className={`h-12 font-semibold text-sm transition w-full
+    ${isOut
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : "bg-green-600 text-white hover:bg-green-700"
+                    }`}
+                >
+                  WHATSAPP
+                </button>
+
+              </div>
+
+
+
+
             </div>
 
             {/* ACCORDIONS */}

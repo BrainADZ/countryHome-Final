@@ -1,5 +1,5 @@
 import ProductsListingClient from "@/components/website/ProductsListingClient";
-
+import HomeCtaSection from "@/components/ctas";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 type ApiCategory = {
@@ -105,6 +105,8 @@ export default async function CategoryPage({
 
       {/* ✅ Filters + Products */}
       <ProductsListingClient products={products} />
+            <div className="mt-4">
+              <HomeCtaSection /></div>
     </div>
   );
 }

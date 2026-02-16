@@ -1,3 +1,4 @@
+import HomeCtaSection from "@/components/ctas";
 import AboutInfoSection from "@/components/website/AboutInfoSection";
 import BrandCarousel from "@/components/website/BrandCraousel";
 import HeroSectionBanner2 from "@/components/website/Branner2";
@@ -30,7 +31,8 @@ export default function HomePage() {
 
       {/* 7. Brands */}
       <BrandCarousel />
-
+   {/* 7. Brands */}
+      <HomeCtaSection />
       {/* 8. About / Info */}
       <AboutInfoSection />
     </main>

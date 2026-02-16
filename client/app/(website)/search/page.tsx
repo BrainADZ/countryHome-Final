@@ -8,7 +8,6 @@ import ProductCard, { type ProductCardProduct } from "@/components/website/Produ
 
 export const dynamic = "force-dynamic";
 
-// ✅ normalize API base (ensure /api like your other pages)
 const RAW_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 const API_BASE = RAW_BASE.endsWith("/api") ? RAW_BASE : `${RAW_BASE}/api`;
 

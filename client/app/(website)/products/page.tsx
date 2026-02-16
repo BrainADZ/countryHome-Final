@@ -1,6 +1,6 @@
 // app/website/products/page.tsx
 import ProductsGridWithFilters from "@/components/website/ProductsGridWithFilters";
-
+import HomeCtaSection from "@/components/ctas";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 type ApiVariant = {
@@ -41,6 +41,9 @@ export default async function AllProductsPage() {
 
       {/* ✅ client does filtering */}
       <ProductsGridWithFilters products={products} />
+      {/* 7. Brands */}
+      <div className="mt-4">
+        <HomeCtaSection /></div>
     </div>
   );
 }
