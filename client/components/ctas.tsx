@@ -1,6 +1,23 @@
-import Link from "next/link";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import { useState } from "react";
+import EnquiryModal from "@/components/website/EnquiryModal";
 
 export default function SimpleCTA() {
+  const [enquiryOpen, setEnquiryOpen] = useState(false);
+const handleEnquirySubmit = async (payload: any) => {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/common/enquiry`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.message || "Failed");
+
+  alert("Catalogue request submitted successfully!");
+};
   return (
     <section className="relative w-full overflow-hidden bg-[#0b4f8a] py-12">
 
@@ -33,17 +50,21 @@ export default function SimpleCTA() {
             Ready to place bulk order?<br />
             <span className="font-semibold text-lg">+91 8826 916 476</span>
           </div>
-
-          <Link
-            href="/contact"
-            className="bg-[#ffc847] hover:bg-[#ffb800] text-black px-6 py-3 rounded-full font-medium transition"
-          >
-            Request Catalogue →
-          </Link>
+<button
+  onClick={() => setEnquiryOpen(true)}
+  className="bg-[#ffc847] hover:bg-[#ffb800] text-black px-6 py-3 rounded-full font-medium transition"
+>
+  Request Catalogue →
+</button>
 
         </div>
 
       </div>
+<EnquiryModal
+  open={enquiryOpen}
+  onClose={() => setEnquiryOpen(false)}
+  onSubmit={handleEnquirySubmit}
+/>
 
     </section>
   );

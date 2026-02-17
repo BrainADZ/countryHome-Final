@@ -6,6 +6,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import EnquiryModal from "@/components/website/EnquiryModal";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
@@ -404,7 +405,7 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
   const [addError, setAddError] = useState<string | null>(null);
   const [addedOnce, setAddedOnce] = useState(false);
 
-
+  const [enquiryOpen, setEnquiryOpen] = useState(false);
   useEffect(() => {
     setSelections(initialSelections);
   }, [product._id, initialSelections]);
@@ -607,15 +608,30 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
 
     return `${name}${priceText ? ` • ${priceText}` : ""} • ${statusText}`;
   };
-  const WHATSAPP_NUMBER = "919879511957";
-  const WA_MESSAGE = `Hi, I'm interested in: ${product.title} ${product.productId} ). Please share more details.`;
+  // const WHATSAPP_NUMBER = "919879511957";
+  // const WA_MESSAGE = `Hi, I'm interested in: ${product.title} ${product.productId} ). Please share more details.`;
 
-  const openWhatsApp = () => {
-    const msg = encodeURIComponent(WA_MESSAGE);
-    // wa.me format: countrycode+number (no +, no spaces)
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`;
-    window.open(url, "_blank");
-  };
+  // const openWhatsApp = () => {
+  //   const msg = encodeURIComponent(WA_MESSAGE);
+  //   // wa.me format: countrycode+number (no +, no spaces)
+  //   const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`;
+  //   window.open(url, "_blank");
+  // };
+
+const handleEnquirySubmit = async (payload: any) => {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/common/enquiry`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.message || "Failed");
+  // success
+};
+
+
 
   return (
     <div className="mt-6 overflow-x-hidden">
@@ -736,7 +752,7 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
                   {badge.text}
                 </span>
               </div>
-                            {/* ✅ COLOR OPTIONS (product.colors / variants.color) */}
+              {/* ✅ COLOR OPTIONS (product.colors / variants.color) */}
               {hasColors && (
                 <div className="mt-6">
                   <div className="border border-gray-200 p-4 overflow-hidden">
@@ -846,7 +862,7 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
                   </div>
                 </div>
               )}
-              
+
               {/* Quantity */}
               <div className="mt-6 flex items-center justify-between gap-3">
                 <div className="text-sm font-semibold text-gray-900">Quantity</div>
@@ -895,6 +911,18 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
                       : "Whislist"}
 
                 </button>
+<button
+  type="button"
+  onClick={() => setEnquiryOpen(true)}
+  disabled={isOut}
+  className={`h-12 font-semibold text-sm transition w-full
+    ${isOut
+      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+      : "bg-orange-600 text-white hover:bg-orange-700"
+    }`}
+>
+  ENQUIRY
+</button>
 
                 {/* 
                       <button
@@ -906,18 +934,7 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
                       >
                         BUY NOW
                       </button> */}
-                <button
-                  type="button"
-                  onClick={openWhatsApp}
-                  disabled={isOut}
-                  className={`h-12 font-semibold text-sm transition w-full
-    ${isOut
-                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                      : "bg-green-600 text-white hover:bg-green-700"
-                    }`}
-                >
-                  WHATSAPP
-                </button>
+
 
               </div>
 
@@ -961,6 +978,15 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
           </div>
         </div>
       </div>
+      <EnquiryModal
+  open={enquiryOpen}
+  onClose={() => setEnquiryOpen(false)}
+  productTitle={product.title}
+  productCode={product.productId}
+  productId={product._id}
+  onSubmit={handleEnquirySubmit}
+/>
+
     </div>
   );
 }

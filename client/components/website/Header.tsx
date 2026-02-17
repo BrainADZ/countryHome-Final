@@ -490,259 +490,287 @@ export function WebsiteHeader() {
         </div>
       </header>
 
-      {/* ================= AUTH POPUP ================= */}
-      {showAuth && (
-        <div className="fixed inset-0 z-999 bg-black/40 flex items-center justify-center px-4">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl relative">
-            <button
-              onClick={() => setShowAuth(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-black"
-              type="button"
-            >
-              <X />
-            </button>
-
-            <div className="px-8 py-7">
-              <h2 className="text-2xl font-semibold text-center text-gray-900">
-                {mode === "login" ? "Welcome Back" : "Create Account"}
-              </h2>
-
-              <p className="text-sm text-gray-500 text-center mt-1 mb-6">
-                {mode === "login"
-                  ? "Login to continue shopping"
-                  : signupStep === "sendOtp"
-                  ? "Enter email to receive OTP"
-                  : signupStep === "verifyOtp"
-                  ? "Enter OTP sent to your email"
-                  : "Complete your profile to finish signup"}
-              </p>
-
-              {authError && (
-                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {authError}
-                </div>
-              )}
-
-              {/* LOGIN FORM */}
-              {mode === "login" && (
-                <form
-                  className="space-y-4"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleLogin();
-                  }}
-                >
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Email Address</label>
-                    <input
-                      type="email"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#82008F]/30 focus:border-[#82008F]"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
-                    <input
-                      type="password"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#82008F]/30 focus:border-[#82008F]"
-                      required
-                    />
-                  </div>
-
-                  <div className="text-right">
-                    <button type="button" className="text-xs text-[#82008F] hover:underline">
-                      Forgot password?
-                    </button>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={busy}
-                    className="w-full mt-2 rounded-lg bg-[#82008F] py-2.5 text-white text-sm font-semibold hover:bg-[#6f007a] transition disabled:opacity-60"
-                  >
-                    {busy ? "Logging in..." : "Login"}
-                  </button>
-                </form>
-              )}
-
-              {/* SIGNUP FLOW (OTP) */}
-              {mode === "signup" && (
-                <div className="space-y-4">
-                  {/* Step 1: Send OTP */}
-                  {signupStep === "sendOtp" && (
-                    <>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Email Address</label>
-                        <input
-                          type="email"
-                          value={signupEmail}
-                          onChange={(e) => setSignupEmail(e.target.value)}
-                          placeholder="you@example.com"
-                          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#82008F]/30 focus:border-[#82008F]"
-                        />
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={handleSendOtp}
-                        disabled={busy}
-                        className="w-full rounded-lg bg-[#82008F] py-2.5 text-white text-sm font-semibold hover:bg-[#6f007a] transition disabled:opacity-60"
-                      >
-                        {busy ? "Sending OTP..." : "Send OTP"}
-                      </button>
-                    </>
-                  )}
-
-                  {/* Step 2: Verify OTP */}
-                  {signupStep === "verifyOtp" && (
-                    <>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
-                        <input
-                          type="email"
-                          value={signupEmail}
-                          onChange={(e) => setSignupEmail(e.target.value)}
-                          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">OTP</label>
-                        <input
-                          type="text"
-                          value={signupOtp}
-                          onChange={(e) => setSignupOtp(e.target.value)}
-                          placeholder="Enter OTP"
-                          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#82008F]/30 focus:border-[#82008F]"
-                        />
-                      </div>
-
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={handleSendOtp}
-                          disabled={busy}
-                          className="w-full rounded-lg border border-gray-300 py-2.5 text-sm font-semibold hover:bg-gray-50 disabled:opacity-60"
-                        >
-                          Resend
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={handleVerifyOtp}
-                          disabled={busy}
-                          className="w-full rounded-lg bg-[#82008F] py-2.5 text-white text-sm font-semibold hover:bg-[#6f007a] transition disabled:opacity-60"
-                        >
-                          {busy ? "Verifying..." : "Verify"}
-                        </button>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Step 3: Register */}
-                  {signupStep === "register" && (
-                    <>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Full Name</label>
-                        <input
-                          type="text"
-                          value={signupName}
-                          onChange={(e) => setSignupName(e.target.value)}
-                          placeholder="Enter your name"
-                          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#82008F]/30 focus:border-[#82008F]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
-                        <input
-                          type="text"
-                          value={signupPhone}
-                          onChange={(e) => setSignupPhone(e.target.value)}
-                          placeholder="Enter your number"
-                          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#82008F]/30 focus:border-[#82008F]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
-                        <input
-                          type="password"
-                          value={signupPassword}
-                          onChange={(e) => setSignupPassword(e.target.value)}
-                          placeholder="••••••••"
-                          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#82008F]/30 focus:border-[#82008F]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Confirm Password</label>
-                        <input
-                          type="password"
-                          value={signupConfirm}
-                          onChange={(e) => setSignupConfirm(e.target.value)}
-                          placeholder="••••••••"
-                          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#82008F]/30 focus:border-[#82008F]"
-                        />
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={handleRegister}
-                        disabled={busy}
-                        className="w-full rounded-lg bg-[#82008F] py-2.5 text-white text-sm font-semibold hover:bg-[#6f007a] transition disabled:opacity-60"
-                      >
-                        {busy ? "Creating..." : "Create Account"}
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Divider */}
-              <div className="flex items-center my-6">
-                <div className="flex-1 h-px bg-gray-200" />
-                <span className="px-3 text-xs text-gray-400">OR</span>
-                <div className="flex-1 h-px bg-gray-200" />
-              </div>
-
-              {/* Toggle */}
-              <div className="text-center text-sm text-gray-600">
-                {mode === "login" ? (
-                  <>
-                    New to Mechkart?{" "}
-                    <button onClick={openSignup} className="text-[#82008F] font-semibold hover:underline" type="button">
-                      Create an account
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Already have an account?{" "}
-                    <button
-                      onClick={() => {
-                        setMode("login");
-                        setSignupStep("sendOtp");
-                        setAuthError("");
-                      }}
-                      className="text-[#82008F] font-semibold hover:underline"
-                      type="button"
-                    >
-                      Login
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
+{/* ================= AUTH POPUP ================= */}
+{showAuth && (
+  <div className="fixed inset-0 z-9999 bg-black/50 flex items-center justify-center px-3 sm:px-6">
+    <div className="bg-white w-full max-w-md shadow-2xl border border-gray-200 relative">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="min-w-0">
+          <div className="text-lg font-semibold text-gray-900">
+            {mode === "login" ? "Login" : "Sign up"}
+          </div>
+          <div className="text-xs text-gray-500 mt-0.5">
+            {mode === "login"
+              ? "Use your email & password to continue."
+              : signupStep === "sendOtp"
+              ? "Enter your email to receive OTP."
+              : signupStep === "verifyOtp"
+              ? "Enter the OTP sent to your email."
+              : "Complete details to finish signup."}
           </div>
         </div>
-      )}
+
+        <button
+          onClick={() => setShowAuth(false)}
+          className="h-9 w-9 grid place-items-center border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+          type="button"
+          aria-label="Close"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="px-6 py-5">
+        {/* Error */}
+        {authError && (
+          <div className="mb-4 border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {authError}
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div className="grid grid-cols-2 border border-gray-200 mb-5">
+          <button
+            type="button"
+            onClick={() => {
+              setMode("login");
+              setAuthError("");
+            }}
+            className={`h-10 text-sm font-semibold transition ${
+              mode === "login"
+                ? "bg-[#82008F] text-white"
+                : "bg-white text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            Login
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMode("signup");
+              setSignupStep("sendOtp");
+              setAuthError("");
+            }}
+            className={`h-10 text-sm font-semibold transition ${
+              mode === "signup"
+                ? "bg-[#82008F] text-white"
+                : "bg-white text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            Sign up
+          </button>
+        </div>
+
+        {/* LOGIN FORM */}
+        {mode === "login" && (
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleLogin();
+            }}
+          >
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full h-11 border border-gray-300 px-3 text-sm outline-none focus:border-[#82008F]"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full h-11 border border-gray-300 px-3 text-sm outline-none focus:border-[#82008F]"
+                required
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                className="text-xs text-[#82008F] font-semibold hover:underline"
+              >
+                Forgot password?
+              </button>
+
+              <button
+                type="submit"
+                disabled={busy}
+                className="h-11 px-5 bg-[#82008F] text-white text-sm font-semibold hover:bg-[#6f007a] transition disabled:opacity-60"
+              >
+                {busy ? "Logging in..." : "Login"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* SIGNUP FLOW */}
+        {mode === "signup" && (
+          <div className="space-y-4">
+            {/* Step indicator */}
+            <div className="grid grid-cols-3 gap-2 mb-1">
+              <div className={`h-1 ${signupStep === "sendOtp" ? "bg-[#82008F]" : "bg-gray-200"}`} />
+              <div className={`h-1 ${signupStep === "verifyOtp" ? "bg-[#82008F]" : "bg-gray-200"}`} />
+              <div className={`h-1 ${signupStep === "register" ? "bg-[#82008F]" : "bg-gray-200"}`} />
+            </div>
+
+            {/* Step 1 */}
+            {signupStep === "sendOtp" && (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full h-11 border border-gray-300 px-3 text-sm outline-none focus:border-[#82008F]"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={busy}
+                  className="w-full h-11 bg-[#82008F] text-white text-sm font-semibold hover:bg-[#6f007a] transition disabled:opacity-60"
+                >
+                  {busy ? "Sending OTP..." : "Send OTP"}
+                </button>
+              </>
+            )}
+
+            {/* Step 2 */}
+            {signupStep === "verifyOtp" && (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                    className="w-full h-11 border border-gray-300 px-3 text-sm outline-none focus:border-[#82008F]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">OTP</label>
+                  <input
+                    type="text"
+                    value={signupOtp}
+                    onChange={(e) => setSignupOtp(e.target.value)}
+                    placeholder="Enter OTP"
+                    className="w-full h-11 border border-gray-300 px-3 text-sm outline-none focus:border-[#82008F]"
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={busy}
+                    className="w-full h-11 border border-gray-300 text-sm font-semibold hover:bg-gray-50 disabled:opacity-60"
+                  >
+                    Resend
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    disabled={busy}
+                    className="w-full h-11 bg-[#82008F] text-white text-sm font-semibold hover:bg-[#6f007a] transition disabled:opacity-60"
+                  >
+                    {busy ? "Verifying..." : "Verify"}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Step 3 */}
+            {signupStep === "register" && (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    value={signupName}
+                    onChange={(e) => setSignupName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="w-full h-11 border border-gray-300 px-3 text-sm outline-none focus:border-[#82008F]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Phone</label>
+                  <input
+                    type="text"
+                    value={signupPhone}
+                    onChange={(e) => setSignupPhone(e.target.value)}
+                    placeholder="Enter your number"
+                    className="w-full h-11 border border-gray-300 px-3 text-sm outline-none focus:border-[#82008F]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Password</label>
+                  <input
+                    type="password"
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full h-11 border border-gray-300 px-3 text-sm outline-none focus:border-[#82008F]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Confirm Password</label>
+                  <input
+                    type="password"
+                    value={signupConfirm}
+                    onChange={(e) => setSignupConfirm(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full h-11 border border-gray-300 px-3 text-sm outline-none focus:border-[#82008F]"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleRegister}
+                  disabled={busy}
+                  className="w-full h-11 bg-[#82008F] text-white text-sm font-semibold hover:bg-[#6f007a] transition disabled:opacity-60"
+                >
+                  {busy ? "Creating..." : "Create Account"}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Bottom helper */}
+        <div className="mt-5 border-t border-gray-100 pt-4 text-xs text-gray-500">
+          By continuing, you agree to our Terms & Privacy Policy.
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
     </>
   );
 }
