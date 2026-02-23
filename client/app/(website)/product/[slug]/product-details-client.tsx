@@ -674,7 +674,7 @@ const handleEnquirySubmit = async (payload: any) => {
                   </div>
 
                   {/* THUMBNAILS */}
-                  <div className="order-2 lg:w-20 w-full lg:shrink-0 min-w-0">
+                  <div className="order-2  w-full lg:shrink-0 min-w-0">
                     <div
                       className="
                         flex flex-row  gap-3
@@ -692,7 +692,9 @@ const handleEnquirySubmit = async (payload: any) => {
                           <button
                             key={img}
                             type="button"
-                            onClick={() => setActiveImg(img)}
+                         onMouseEnter={() => setActiveImg(img)}   // ✅ hover -> image change
+  onFocus={() => setActiveImg(img)}        // ✅ keyboard tab support
+  onClick={() => setActiveImg(img)}   
                             className={`h-16 w-16 shrink-0 border bg-white overflow-hidden transition snap-start relative ${active ? "border-blue-600" : "border-gray-200 hover:border-gray-300"
                               }`}
                             aria-label="Select image"
