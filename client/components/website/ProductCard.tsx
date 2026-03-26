@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
 // components/website/ProductCard.tsx
@@ -5,6 +6,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import EnquiryModal from "@/components/website/EnquiryModal";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
@@ -41,6 +43,7 @@ export type ProductCardVariant = {
 
 export type ProductCardProduct = {
   _id: string;
+  productId?: string;
   title: string;
   slug: string;
 
@@ -65,7 +68,6 @@ function firstTruthy(...vals: Array<string | undefined | null>) {
   return vals.find((v) => typeof v === "string" && v.trim().length > 0)?.trim();
 }
 
-// ✅ treat invalid strings as empty
 function cleanImgPath(p?: any) {
   if (p === undefined || p === null) return "";
   const s = String(p).trim();
@@ -75,7 +77,6 @@ function cleanImgPath(p?: any) {
   return s;
 }
 
-// ✅ keep variant image selection in one place (sanitized)
 function getVariantFirstImage(v?: ProductCardVariant | null) {
   if (!v) return "";
   return (
@@ -86,9 +87,6 @@ function getVariantFirstImage(v?: ProductCardVariant | null) {
   );
 }
 
-// ❌ ProductCard se add-to-cart remove kar diya (as per your instruction)
-// async function addToCartApi(...) { ... }
-
 export default function ProductCard({ product }: { product: ProductCardProduct }) {
   const variants = product.variants || [];
   const hasVariants = variants.length > 0;
@@ -97,12 +95,27 @@ export default function ProductCard({ product }: { product: ProductCardProduct }
     variants[0]?._id
   );
 
+  const [enquiryOpen, setEnquiryOpen] = useState(false);
+
+  const handleEnquirySubmit = async (payload: any) => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/common/enquiry`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.message || "Failed");
+
+    alert("Enquiry submitted successfully!");
+  };
+
   const selectedVariant = useMemo(() => {
     if (!hasVariants) return null;
     return variants.find((v) => v._id === selectedVariantId) || variants[0] || null;
   }, [hasVariants, variants, selectedVariantId]);
 
-  // stock
   const baseOut =
     product.inStock === false ||
     (typeof product.totalStock === "number" && product.totalStock <= 0);
@@ -112,7 +125,6 @@ export default function ProductCard({ product }: { product: ProductCardProduct }
 
   const isOut = baseOut || variantOut;
 
-  // price (variant first, fallback product)
   const baseMrp = Number(product.mrp ?? 0);
   const baseSale = Number(product.salePrice ?? 0);
 
@@ -122,17 +134,15 @@ export default function ProductCard({ product }: { product: ProductCardProduct }
 
   const off = calcDiscountPercent(displayMrp, displaySale);
 
-  // image (variant image -> product feature image)
   const rawVariantImg = hasVariants ? getVariantFirstImage(selectedVariant) : "";
   const rawProductImg = cleanImgPath(product.featureImage);
   const img = resolveImageUrl(rawVariantImg || rawProductImg);
 
-  // ✅ chips me color remove (sirf label/combText/size/weight)
   const variantChips = useMemo(() => {
     return variants
       .map((v) => ({
         id: v._id,
-        text: firstTruthy(v.label, v.comboText, v.size, v.weight), // ✅ color removed
+        text: firstTruthy(v.label, v.comboText, v.size, v.weight),
         qty: Number(v.quantity ?? 0),
       }))
       .filter((x) => !!x.text);
@@ -144,11 +154,10 @@ export default function ProductCard({ product }: { product: ProductCardProduct }
   return (
     <div className="group">
       <Link href={`/product/${product.slug}`} className="block">
-        <div className="relative overflow-hidden transition hover:shadow-xl p-4 border border-gray-200">
+        <div className="relative overflow-hidden border border-gray-200 p-4 ">
           {/* Image */}
           <div className="relative aspect-square bg-gray-50">
             {img ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img
                 key={img}
                 src={img}
@@ -157,7 +166,7 @@ export default function ProductCard({ product }: { product: ProductCardProduct }
                 loading="lazy"
               />
             ) : (
-              <div className="h-full w-full flex items-center justify-center text-xs text-gray-400">
+              <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">
                 No Image
               </div>
             )}
@@ -176,8 +185,6 @@ export default function ProductCard({ product }: { product: ProductCardProduct }
                 </span>
               )}
             </div>
-
-            {/* ✅ Add to cart button removed */}
           </div>
 
           {/* Content */}
@@ -234,7 +241,7 @@ export default function ProductCard({ product }: { product: ProductCardProduct }
                               ? "bg-gray-900 text-white ring-gray-900"
                               : "bg-white text-gray-700 ring-gray-200 hover:ring-gray-300"
                           }
-                          ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                          ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
                         title={disabled ? "Out of stock" : v.text}
                       >
                         {v.text}
@@ -243,7 +250,7 @@ export default function ProductCard({ product }: { product: ProductCardProduct }
                   })}
 
                   {variantChips.length > 4 && (
-                    <span className="text-[11px] text-gray-500 px-1 py-1 mt-2">
+                    <span className="mt-2 px-1 py-1 text-[11px] text-gray-500">
                       +{variantChips.length - 4} more
                     </span>
                   )}
@@ -253,10 +260,27 @@ export default function ProductCard({ product }: { product: ProductCardProduct }
               )}
             </div>
 
+            {/* Enquiry button */}
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setEnquiryOpen(true);
+                }}
+                className="w-full cursor-pointer bg-[#ffc847] px-4 py-2.5 text-[13px] font-medium text-black transition hover:bg-[#ffb800]"
+              >
+                Enquiry
+              </button>
+            </div>
+
             {/* Stock microtext */}
             {hasVariants && selectedVariant && (
               <div className="mt-2 text-[12px] text-gray-500">
-                {Number(selectedVariant.quantity ?? 0) > 0 ? "In stock" : "Currently unavailable"}
+                {Number(selectedVariant.quantity ?? 0) > 0
+                  ? "In stock"
+                  : "Currently unavailable"}
               </div>
             )}
 
@@ -270,6 +294,15 @@ export default function ProductCard({ product }: { product: ProductCardProduct }
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1 bg-linear-to-r from-transparent via-gray-200 to-transparent opacity-0 transition group-hover:opacity-100" />
         </div>
       </Link>
+
+      <EnquiryModal
+        open={enquiryOpen}
+        onClose={() => setEnquiryOpen(false)}
+        productTitle={product.title}
+        productCode={product.productId}
+        productId={product._id}
+        onSubmit={handleEnquirySubmit}
+      />
     </div>
   );
 }

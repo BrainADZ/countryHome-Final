@@ -5,7 +5,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import EnquiryModal from "@/components/website/EnquiryModal";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
@@ -488,7 +488,19 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
   ]);
 
   const [activeImg, setActiveImg] = useState<string>("");
+  const activeIndex = images.findIndex((img) => img === activeImg);
 
+  const goToPrevImage = () => {
+    if (!images.length) return;
+    const prevIndex = activeIndex <= 0 ? images.length - 1 : activeIndex - 1;
+    setActiveImg(images[prevIndex]);
+  };
+
+  const goToNextImage = () => {
+    if (!images.length) return;
+    const nextIndex = activeIndex >= images.length - 1 ? 0 : activeIndex + 1;
+    setActiveImg(images[nextIndex]);
+  };
   useEffect(() => {
     if (!images.length) {
       setActiveImg("");
@@ -618,18 +630,18 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
   //   window.open(url, "_blank");
   // };
 
-const handleEnquirySubmit = async (payload: any) => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/common/enquiry`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(payload),
-  });
+  const handleEnquirySubmit = async (payload: any) => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/common/enquiry`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.message || "Failed");
-  // success
-};
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.message || "Failed");
+    // success
+  };
 
 
 
@@ -645,7 +657,7 @@ const handleEnquirySubmit = async (payload: any) => {
                   {/* MAIN IMAGE */}
                   <div className="order-2 w-full flex-1 min-w-0">
                     <div className="bg-white">
-                      <div className="aspect-square bg-white border border-gray-200 relative overflow-hidden">
+                      <div className="aspect-square bg-white border border-gray-200 relative overflow-hidden group">
                         {activeImg ? (
                           <>
                             <img
@@ -654,6 +666,29 @@ const handleEnquirySubmit = async (payload: any) => {
                               alt={product.title}
                               className={`h-full w-full object-contain max-w-full ${isOut ? "opacity-70" : ""}`}
                             />
+
+                            {images.length > 1 && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={goToPrevImage}
+                                  className="hidden lg:flex absolute left-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white/95 shadow-sm hover:bg-white"
+                                  aria-label="Previous image"
+                                >
+                                  <ChevronLeft size={18} />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={goToNextImage}
+                                  className="hidden lg:flex absolute right-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white/95 shadow-sm hover:bg-white"
+                                  aria-label="Next image"
+                                >
+                                  <ChevronRight size={18} />
+                                </button>
+                              </>
+                            )}
+
                             {isOut && (
                               <div className="absolute left-3 top-3">
                                 <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold bg-red-600 text-white">
@@ -692,9 +727,9 @@ const handleEnquirySubmit = async (payload: any) => {
                           <button
                             key={img}
                             type="button"
-                         onMouseEnter={() => setActiveImg(img)}   // ✅ hover -> image change
-  onFocus={() => setActiveImg(img)}        // ✅ keyboard tab support
-  onClick={() => setActiveImg(img)}   
+                            onMouseEnter={() => setActiveImg(img)}   // ✅ hover -> image change
+                            onFocus={() => setActiveImg(img)}        // ✅ keyboard tab support
+                            onClick={() => setActiveImg(img)}
                             className={`h-16 w-16 shrink-0 border bg-white overflow-hidden transition snap-start relative ${active ? "border-blue-600" : "border-gray-200 hover:border-gray-300"
                               }`}
                             aria-label="Select image"
@@ -913,18 +948,18 @@ const handleEnquirySubmit = async (payload: any) => {
                       : "Whislist"}
 
                 </button>
-<button
-  type="button"
-  onClick={() => setEnquiryOpen(true)}
-  disabled={isOut}
-  className={`h-12 font-semibold text-sm transition w-full
+                <button
+                  type="button"
+                  onClick={() => setEnquiryOpen(true)}
+                  disabled={isOut}
+                  className={`h-12 font-semibold text-sm transition w-full
     ${isOut
-      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-      : "bg-orange-600 text-white hover:bg-orange-700"
-    }`}
->
-  ENQUIRY
-</button>
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : "bg-orange-600 text-white hover:bg-orange-700"
+                    }`}
+                >
+                  ENQUIRY
+                </button>
 
                 {/* 
                       <button
@@ -981,13 +1016,13 @@ const handleEnquirySubmit = async (payload: any) => {
         </div>
       </div>
       <EnquiryModal
-  open={enquiryOpen}
-  onClose={() => setEnquiryOpen(false)}
-  productTitle={product.title}
-  productCode={product.productId}
-  productId={product._id}
-  onSubmit={handleEnquirySubmit}
-/>
+        open={enquiryOpen}
+        onClose={() => setEnquiryOpen(false)}
+        productTitle={product.title}
+        productCode={product.productId}
+        productId={product._id}
+        onSubmit={handleEnquirySubmit}
+      />
 
     </div>
   );
