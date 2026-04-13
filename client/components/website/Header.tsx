@@ -377,7 +377,7 @@ export function WebsiteHeader() {
             {/* LEFT: LOGO */}
             <div className="flex items-center justify-between md:justify-start">
               <Link href="/" className="select-none">
-                <img src="/logo.jpg" alt="Mechkart" className="w-50 h-16" />
+                <img src="/logo.jpg" alt="Country Home" className="w-50 h-16" />
               </Link>
 
               {/* MOBILE ACTIONS */}
