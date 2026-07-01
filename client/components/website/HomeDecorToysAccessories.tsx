@@ -203,7 +203,9 @@ export default function HomeDecorToysAccessories() {
       const parent = parents.find((p) => (p.slug || "").toLowerCase() === slug);
       if (!parent) return null;
 
-      const subs = (childrenMap[parent._id] || []).slice(0, 4);
+      const subs = (childrenMap[parent._id] || [])
+        .filter((sub) => Boolean(sub.image))
+        .slice(0, 4);
 
       return {
         title: parent.name,
@@ -216,7 +218,7 @@ export default function HomeDecorToysAccessories() {
 
           return {
             name: sub.name,
-            img: sub.image ? resolveImageUrl(sub.image) : "/tshirt.webp",
+            img: resolveImageUrl(sub.image),
             href: `/category/${parent.slug}/${sub.slug}`,
             offer: offerText,
             offerType: avg > 0 ? "discount" : "new",

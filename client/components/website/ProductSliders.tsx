@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCard from "./ProductCard"; // ✅ use your universal card
 
@@ -61,42 +61,22 @@ function Slider({ title, products }: { title: string; products: any[] }) {
 
 export default function ProductSliders() {
   const [latestProducts, setLatestProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  // ✅ keep a tiny fallback so UI never breaks if API fails completely
-  const fallbackLatest = useMemo(
-    () => [
-      {
-        _id: "demo1",
-        title: "Demo Product",
-        slug: "demo-product",
-        featureImage: "/latest/ipad.png",
-        mrp: 999,
-        salePrice: 699,
-        totalStock: 10,
-        inStock: true,
-        variants: [],
-      },
-    ],
-    []
-  );
 
   useEffect(() => {
     const run = async () => {
       try {
         if (!API_BASE) {
-          setLatestProducts(fallbackLatest);
+          setLatestProducts([]);
           return;
         }
 
-        setLoading(true);
-
         const res = await fetch(PRODUCTS_ENDPOINT, { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load latest products");
         const data = await res.json();
 
         const list: any[] = data?.data || data?.products || [];
         if (!Array.isArray(list) || list.length === 0) {
-          setLatestProducts(fallbackLatest);
+          setLatestProducts([]);
           return;
         }
 
@@ -144,24 +124,20 @@ export default function ProductSliders() {
         // final cap
         finalList = finalList.slice(0, DESIRED_COUNT);
 
-        setLatestProducts(finalList.length ? finalList : fallbackLatest);
+        setLatestProducts(finalList);
       } catch {
-        setLatestProducts(fallbackLatest);
-      } finally {
-        setLoading(false);
+        setLatestProducts([]);
       }
     };
 
     run();
-  }, [fallbackLatest]);
+  }, []);
 
-  // ✅ keep UI working even while loading
-  const renderList =
-    loading && latestProducts.length === 0 ? fallbackLatest : latestProducts;
+  if (latestProducts.length === 0) return null;
 
   return (
     <>
-      <Slider title="Latest Products" products={renderList} />
+      <Slider title="Latest Products" products={latestProducts} />
       <div className="h-px bg-[#e4edf1] mx-auto max-w-[1700px]" />
     </>
   );

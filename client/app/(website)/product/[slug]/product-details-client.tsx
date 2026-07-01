@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
@@ -86,50 +85,6 @@ function formatINR(n: number) {
     return String(Math.round(n));
   }
 }
-
-// TODO: replace with your real cart system
-async function addToCartApi(args: {
-  productId: string;
-  qty: number;
-  variantId?: string;
-  colorKey?: string | null;
-  // ✅ NEW (for buy-now selection flow)
-  selectOnAdd?: boolean;
-  clearOthers?: boolean;
-}) {
-  const { productId, qty, variantId, colorKey } = args;
-
-  if (!productId) throw new Error("Missing productId");
-
-  // if product has variants, variantId must be there
-  // (we’ll validate again before calling)
-  const res = await fetch(`${API_BASE}/common/cart/add`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include", // ✅ important for guest cart cookie
-    body: JSON.stringify({
-      productId,
-      variantId,
-      colorKey: colorKey || null,
-      qty,
-      // ✅ new flags
-      selectOnAdd: Boolean(args.selectOnAdd),
-      clearOthers: Boolean(args.clearOthers),
-    }),
-  });
-
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new Error(data?.message || "Add to cart failed");
-  }
-
-  // optional: for header cart badge refresh
-  if (typeof window !== "undefined") window.dispatchEvent(new Event("cart:updated"));
-
-  return data?.data ?? data;
-}
-
 
 function AccordionItem({
   title,
@@ -401,9 +356,6 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
   }, [hasVariants, optionKeys, variants, hasColors, colors]);
 
   const [selections, setSelections] = useState<Record<string, string>>(initialSelections);
-  const [adding, setAdding] = useState(false);
-  const [addError, setAddError] = useState<string | null>(null);
-  const [addedOnce, setAddedOnce] = useState(false);
 
   const [enquiryOpen, setEnquiryOpen] = useState(false);
   useEffect(() => {
@@ -513,71 +465,6 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
   const [openKey, setOpenKey] = useState<"desc" | "feat" | "refund" | "ship" | null>(null);
   const toggleKey = (k: "desc" | "feat" | "refund" | "ship") => setOpenKey((prev) => (prev === k ? null : k));
 
-  const handleAddToCart = async () => {
-    if (isOut) return;
-
-    // ✅ variantId required if variants exist
-    if (hasVariants && !selectedVariant?._id) {
-      setAddError("Please select a variant");
-      return;
-    }
-
-    setAdding(true);
-    setAddError(null);
-
-    try {
-      await addToCartApi({
-        productId: product._id,
-        qty,
-        variantId: hasVariants ? String(selectedVariant?._id) : undefined,
-        colorKey: selectedColorName ? selectedColorName.trim().toLowerCase() : null,
-        // ✅ Add-to-cart does not disturb other selections
-        selectOnAdd: false,
-        clearOthers: false,
-      });
-      setAddedOnce(true);
-      setTimeout(() => setAddedOnce(false), 1500);
-
-    } catch (e: any) {
-      setAddError(e?.message || "Add to cart failed");
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  // const handleBuyNow = async () => {
-  //   if (isOut) return;
-
-  //   if (hasVariants && !selectedVariant?._id) {
-  //     setAddError("Please select a variant");
-  //     return;
-  //   }
-
-  //   setAdding(true);
-  //   setAddError(null);
-
-  //   try {
-  //     await addToCartApi({
-  //       productId: product._id,
-  //       qty,
-  //       variantId: hasVariants ? String(selectedVariant?._id) : undefined,
-  //       colorKey: selectedColorName ? selectedColorName.trim().toLowerCase() : null,
-  //       // ✅ Buy-now: only this item selected
-  // selectOnAdd: true,
-  // clearOthers: true,
-  //     });
-
-  //     // ✅ redirect to cart/checkout as per your flow
-  //     window.location.href = "/cart";
-  //   } catch (e: any) {
-  //     setAddError(e?.message || "Buy now failed");
-  //   } finally {
-  //     setAdding(false);
-  //   }
-  // };
-
-
-
   // Sort variants: in-stock first, then name
   const sortedVariants = useMemo(() => {
     const list = [...variants];
@@ -620,15 +507,30 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
 
     return `${name}${priceText ? ` • ${priceText}` : ""} • ${statusText}`;
   };
-  // const WHATSAPP_NUMBER = "919879511957";
-  // const WA_MESSAGE = `Hi, I'm interested in: ${product.title} ${product.productId} ). Please share more details.`;
+  const openWhatsApp = () => {
+    if (isOut) return;
 
-  // const openWhatsApp = () => {
-  //   const msg = encodeURIComponent(WA_MESSAGE);
-  //   // wa.me format: countrycode+number (no +, no spaces)
-  //   const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`;
-  //   window.open(url, "_blank");
-  // };
+    const unitPrice = displaySale > 0 ? displaySale : displayMrp;
+    const lines = [
+      "Hi, I want to order this product:",
+      "",
+      `Product: ${product.title}`,
+      product.productId ? `Product Code: ${product.productId}` : "",
+      selectedVariant ? `Variant: ${variantDisplayText(selectedVariant)}` : "",
+      selectedColorName ? `Color: ${selectedColorName}` : "",
+      `Quantity: ${qty}`,
+      unitPrice > 0 ? `Price: ₹${formatINR(unitPrice)} each` : "",
+      unitPrice > 0 && qty > 1 ? `Total: ₹${formatINR(unitPrice * qty)}` : "",
+      `Product Link: ${window.location.href}`,
+    ].filter(Boolean);
+
+    const message = encodeURIComponent(lines.join("\n"));
+    window.open(
+      `https://wa.me/919879511957?text=${message}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
 
   const handleEnquirySubmit = async (payload: any) => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/common/enquiry`, {
@@ -931,22 +833,15 @@ export default function ProductDetailsClient({ product }: { product: ApiProduct 
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={handleAddToCart}
-                  disabled={isOut || adding}
+                  onClick={openWhatsApp}
+                  disabled={isOut}
                   className={`h-12 font-semibold text-sm border transition w-full
     ${isOut
                       ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                      : adding
-                        ? "bg-gray-100 text-gray-700 cursor-wait"
-                        : "bg-white text-gray-900 border-gray-300 hover:bg-gray-50"
+                      : "bg-[#25D366] text-white border-[#25D366] hover:bg-[#1fba59]"
                     }`}
                 >
-                  {adding
-                    ? "ADDING…"
-                    : addedOnce
-                      ? "ADDED ✓"
-                      : "Whislist"}
-
+                  WHATSAPP
                 </button>
                 <button
                   type="button"

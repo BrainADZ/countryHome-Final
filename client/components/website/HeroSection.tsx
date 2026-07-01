@@ -25,6 +25,7 @@ const resolveImageUrl = (path?: string) => {
 
 export default function HeroSection() {
   const [banner, setBanner] = useState<Banner | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // ✅ UPDATED: new common route supports key param
   // Backend: GET /api/common/banners/:key
@@ -36,6 +37,7 @@ export default function HeroSection() {
         if (!API_BASE) return;
 
         const res = await fetch(endpoint, { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load home banner");
         const data = await res.json();
 
         const b: Banner | null = data?.banner || null;
@@ -48,14 +50,18 @@ export default function HeroSection() {
         setBanner(b);
       } catch {
         setBanner(null);
+      } finally {
+        setLoading(false);
       }
     };
 
     run();
   }, [endpoint]);
 
-  // ✅ fallback (keeps UI same if no banner set)
-  const bgSrc = banner?.image ? resolveImageUrl(banner.image) : "/hero.webp";
+  // Dynamic content must not flash a hardcoded banner before the API responds.
+  if (loading || !banner?.image) return null;
+
+  const bgSrc = resolveImageUrl(banner.image);
   const ctaHref = banner?.ctaUrl?.trim()
     ? banner.ctaUrl.trim()
     : "/products";

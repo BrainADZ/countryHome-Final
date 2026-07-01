@@ -216,19 +216,21 @@ export default function DealsSection() {
 
     const buildItems = (sec?: DealSection | null) => {
       const picks = sec?.picks || [];
-      // keep only valid 4
-      return picks.slice(0, 4).map((p) => {
+      // Render only complete database records; never substitute demo content.
+      return picks.flatMap((p) => {
         const cat = categoryById[p.id];
+        if (!cat?.image) return [];
+
         const avg = avgDiscountMap[p.id] || 0;
 
-        return {
-          name: cat?.name || "—",
-          img: cat?.image ? resolveImageUrl(cat.image) : "/tshirt.webp",
+        return [{
+          name: cat.name,
+          img: resolveImageUrl(cat.image),
           offer: avg > 0 ? `Min. ${avg}% Off` : "New Range",
           offerType: avg > 0 ? "discount" : "new",
-          href: cat ? buildHref(p, cat) : "/category",
-        };
-      });
+          href: buildHref(p, cat),
+        }];
+      }).slice(0, 4);
     };
 
     const topItems = buildItems(top);
