@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "CountryHome | Best E-commerce Platform",
+  title: "CountryHome - Buy Bedsheets, Comforters, Dohars & Hospital Linen Online",
   description: "Buy premium bedsheets, comforters, dohars, and hospital & clinic linen online at CountryHome. Trusted ecommerce platform for quality textiles, bulk orders, and affordable pricing across India.",
   icons: {
     icon: [{ url: "/logo.jpg", type: "image/jpeg" }],
